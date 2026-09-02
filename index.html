@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daybook — Activity Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===================== LOGIN SCREEN (User Account Login) ===================== -->
+  <section id="login-screen" class="login-screen">
+    <div class="login-card">
+      <p class="brand">Daybook</p>
+      <h1>Sign in to your dashboard</h1>
+      <p class="login-sub">Access your personal activity workspace.</p>
+
+      <form id="login-form">
+        <label for="username">Username</label>
+        <input type="text" id="username" value="user1" autocomplete="username" required />
+
+        <label for="password">Passcode</label>
+        <input type="password" id="password" placeholder="Enter passcode" autocomplete="current-password" required />
+
+        <p id="login-error" class="error-text" hidden>Incorrect username or passcode.</p>
+
+        <button type="submit" class="btn-primary">Sign In</button>
+        <p class="login-hint">Demo credentials — user1 / demo1234</p>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===================== MAIN APP (hidden until login) ===================== -->
+  <div id="app" class="app" hidden>
+
+    <!-- Mobile nav toggle -->
+    <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+
+    <!-- ===================== SIDEBAR NAVIGATION ===================== -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-brand">
+        <p class="brand">Daybook</p>
+        <p class="brand-sub">Activity Manager</p>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-page="dashboard">
+          <span class="nav-icon" data-icon="grid"></span>
+          Dashboard
+        </button>
+        <button class="nav-item" data-page="today">
+          <span class="nav-icon" data-icon="calendar"></span>
+          Today
+        </button>
+        <button class="nav-item" data-page="history">
+          <span class="nav-icon" data-icon="clock"></span>
+          History
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <p class="footer-note">Daybook v1.0 — Frontend Preview</p>
+      </div>
+    </aside>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <div class="main">
+
+      <!-- ===================== HEADER ===================== -->
+      <header class="header">
+        <div class="header-left">
+          <h2 id="page-title">Dashboard</h2>
+        </div>
+
+        <div class="header-right">
+          <div class="search-area">
+            <input type="text" id="search-input" placeholder="Search activities..." />
+          </div>
+
+          <div class="profile-area">
+            <button id="profile-btn" class="profile-btn">
+              <span class="avatar">U1</span>
+              <span class="profile-name">user1</span>
+            </button>
+            <div id="profile-menu" class="profile-menu" hidden>
+              <button id="logout-btn">Sign out</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ===================== PAGE: DASHBOARD ===================== -->
+      <section id="page-dashboard" class="page active">
+        <p class="page-subtitle">An overview of your activity, pulled from Today and History.</p>
+
+        <div class="summary-cards">
+          <div class="card">
+            <p class="card-label">Total Today</p>
+            <p class="card-value" id="stat-total-today">0</p>
+          </div>
+          <div class="card">
+            <p class="card-label">Pending Today</p>
+            <p class="card-value" id="stat-pending-today">0</p>
+          </div>
+          <div class="card card-accent">
+            <p class="card-label">Completed Today</p>
+            <p class="card-value" id="stat-completed-today">0</p>
+          </div>
+          <div class="card">
+            <p class="card-label">Completed (History)</p>
+            <p class="card-value" id="stat-completed-history">0</p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Recent Activity</h3>
+            <button class="btn-secondary" data-goto="today">Go to Today</button>
+          </div>
+          <table class="data-table" id="dashboard-recent-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================== PAGE: TODAY (Logger + Daily View + Completion + Edit/Delete) ===================== -->
+      <section id="page-today" class="page">
+        <p class="page-subtitle">Log new activities and manage what's pending or done today.</p>
+
+        <div class="action-row">
+          <button id="add-activity-btn" class="btn-primary">+ New Activity</button>
+        </div>
+
+        <!-- Activity Logger form (hidden until "+ New Activity" is clicked) -->
+        <form id="logger-form" class="logger-form" hidden>
+          <div class="form-row">
+            <input type="text" id="logger-title" placeholder="Activity title" required />
+            <input type="text" id="logger-notes" placeholder="Notes (optional)" />
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Save Activity</button>
+            <button type="button" id="logger-cancel" class="btn-secondary">Cancel</button>
+          </div>
+        </form>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Pending</h3>
+          </div>
+          <table class="data-table" id="pending-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Title</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p class="empty-state" id="pending-empty" hidden>Nothing pending. Add an activity above.</p>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Completed Today</h3>
+          </div>
+          <table class="data-table" id="completed-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Title</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p class="empty-state" id="completed-empty" hidden>No activities completed yet today.</p>
+        </div>
+      </section>
+
+      <!-- ===================== PAGE: HISTORY ===================== -->
+      <section id="page-history" class="page">
+        <p class="page-subtitle">Review previously completed activities, grouped by date.</p>
+
+        <div class="filter-area">
+          <label for="history-date-filter">Filter by date</label>
+          <select id="history-date-filter">
+            <option value="all">All dates</option>
+          </select>
+        </div>
+
+        <div id="history-container"></div>
+        <p class="empty-state" id="history-empty" hidden>No completed activities found for this filter.</p>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Edit modal (shared by Today & History tables) -->
+  <div id="edit-modal" class="modal" hidden>
+    <div class="modal-card">
+      <h3>Edit Activity</h3>
+      <form id="edit-form">
+        <label for="edit-title">Title</label>
+        <input type="text" id="edit-title" required />
+        <label for="edit-notes">Notes</label>
+        <input type="text" id="edit-notes" />
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Save Changes</button>
+          <button type="button" id="edit-cancel" class="btn-secondary">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete confirm modal -->
+  <div id="delete-modal" class="modal" hidden>
+    <div class="modal-card">
+      <h3>Delete Activity?</h3>
+      <p>This will permanently remove the activity. This cannot be undone.</p>
+      <div class="form-actions">
+        <button id="delete-confirm-btn" class="btn-danger">Delete</button>
+        <button id="delete-cancel-btn" class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
