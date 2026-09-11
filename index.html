@@ -1,21 +1,47 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="onepiece">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Daybook — Activity Management System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=Pirata+One&family=Cormorant+Garamond:wght@600;700&family=Oswald:wght@500;600;700&family=Bangers&family=Nunito:wght@500;700&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=2" />
 </head>
 <body>
 
+  <div class="theme-atmosphere" aria-hidden="true"></div>
+
   <!-- ===================== LOGIN SCREEN (User Account Login) ===================== -->
   <section id="login-screen" class="login-screen">
-    <div class="login-card">
+    <div class="gate-card" id="step-theme">
       <p class="brand">Daybook</p>
+      <h1>Choose your theme</h1>
+      <p class="login-sub">This look — and your guide — stay locked until you sign out.</p>
+      <div id="theme-pick-grid" class="pick-grid"></div>
+    </div>
+
+    <div class="gate-card" id="step-mentor" hidden>
+      <p class="brand">Daybook</p>
+      <h1>Choose your guide</h1>
+      <p class="login-sub" id="mentor-step-sub">Pick one mentor for this session.</p>
+      <div id="mentor-pick-grid" class="pick-grid"></div>
+      <button type="button" id="back-to-theme" class="btn-secondary gate-back">Back to themes</button>
+    </div>
+
+    <div class="login-card" id="step-login" hidden>
+      <p class="brand" id="login-brand">Daybook</p>
       <h1>Sign in to your dashboard</h1>
-      <p class="login-sub">Access your personal activity workspace.</p>
+      <p class="login-sub" id="login-lock-summary">Access your personal activity workspace.</p>
+
+      <div id="login-selected-mentor-banner" class="selected-mentor-banner" hidden>
+        <img id="login-selected-mentor-img" class="selected-mentor-banner-img" alt="Selected Mentor" />
+        <div class="selected-mentor-banner-info">
+          <p class="selected-mentor-tag">Selected Mentor Guide</p>
+          <strong id="login-selected-mentor-name">Zoro</strong>
+          <span id="login-selected-mentor-title">Swordsman Guide</span>
+        </div>
+      </div>
 
       <form id="login-form">
         <label for="username">Username</label>
@@ -29,22 +55,21 @@
         <button type="submit" class="btn-primary">Sign In</button>
         <p class="login-hint">Demo credentials — user1 / demo1234</p>
       </form>
+      <button type="button" id="back-to-mentor" class="btn-secondary gate-back">Back to guides</button>
     </div>
   </section>
 
   <!-- ===================== MAIN APP (hidden until login) ===================== -->
   <div id="app" class="app" hidden>
 
-    <!-- Mobile nav toggle -->
     <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
       <span></span><span></span><span></span>
     </button>
 
-    <!-- ===================== SIDEBAR NAVIGATION ===================== -->
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-brand">
         <p class="brand">Daybook</p>
-        <p class="brand-sub">Activity Manager</p>
+        <p class="brand-sub" id="brand-sub">Activity Manager</p>
       </div>
 
       <nav class="nav-menu">
@@ -60,17 +85,47 @@
           <span class="nav-icon" data-icon="clock"></span>
           History
         </button>
+        <button class="nav-item" data-page="quests">
+          <span class="nav-icon" data-icon="flag"></span>
+          Quests
+        </button>
       </nav>
 
+      <div class="sidebar-streak">
+        <span class="streak-flame">🔥</span>
+        <div>
+          <p class="streak-mini-value"><span id="sidebar-streak-count">0</span> day streak</p>
+          <p class="streak-mini-label">Keep the chain going</p>
+        </div>
+      </div>
+
+      <div class="xp-card">
+        <p class="xp-rank" id="sidebar-rank">Rookie</p>
+        <p class="xp-level">Lv <span id="sidebar-level">1</span> · <span id="sidebar-xp">0</span> XP</p>
+        <div class="streak-progress-track">
+          <div id="xp-progress-fill" class="streak-progress-fill" style="width:0%"></div>
+        </div>
+        <p class="xp-next" id="sidebar-xp-next">Next level</p>
+      </div>
+
+      <div class="mentor-card">
+        <div class="mentor-avatar-container">
+          <img id="mentor-card-avatar" class="mentor-card-avatar" alt="Mentor avatar" hidden />
+          <div class="mentor-mark" id="mentor-mark" aria-hidden="true">★</div>
+        </div>
+        <div>
+          <p class="mentor-name" id="mentor-name">Guide</p>
+          <p class="mentor-title" id="mentor-title">Session mentor</p>
+        </div>
+        <p class="mentor-text" id="mentor-text">Your guide will check in as you log real work.</p>
+      </div>
+
       <div class="sidebar-footer">
-        <p class="footer-note">Daybook v1.0 — Frontend Preview</p>
+        <p class="footer-note">Daybook v1.0</p>
       </div>
     </aside>
 
-    <!-- ===================== MAIN CONTENT ===================== -->
     <div class="main">
-
-      <!-- ===================== HEADER ===================== -->
       <header class="header">
         <div class="header-left">
           <h2 id="page-title">Dashboard</h2>
@@ -93,9 +148,50 @@
         </div>
       </header>
 
-      <!-- ===================== PAGE: DASHBOARD ===================== -->
       <section id="page-dashboard" class="page active">
         <p class="page-subtitle">An overview of your activity, pulled from Today and History.</p>
+
+        <div class="highlights-row">
+          <div class="streak-card">
+            <div class="streak-top">
+              <span class="streak-flame-lg">🔥</span>
+              <div>
+                <p class="streak-value"><span id="stat-streak">0</span> day streak</p>
+                <p id="streak-message" class="streak-message">Complete something today to start your streak.</p>
+              </div>
+            </div>
+            <div class="streak-progress-track">
+              <div id="streak-progress-fill" class="streak-progress-fill" style="width:0%"></div>
+            </div>
+            <p class="streak-milestone" id="streak-milestone-label">Next milestone: 7 days</p>
+          </div>
+
+          <div class="slideshow" id="slideshow">
+            <div class="slideshow-track" id="slideshow-track">
+              <div class="slide active">
+                <p class="slide-emoji">🔥</p>
+                <p class="slide-text" id="slide-streak-text">Building your streak — nice work.</p>
+              </div>
+              <div class="slide">
+                <p class="slide-emoji">✅</p>
+                <p class="slide-text" id="slide-weekly-text">Tasks completed this week.</p>
+              </div>
+              <div class="slide">
+                <p class="slide-emoji">📅</p>
+                <p class="slide-text">Check History to spot your most productive days.</p>
+              </div>
+              <div class="slide">
+                <p class="slide-emoji">💡</p>
+                <p class="slide-text">Tip: log activities as soon as they come up — it keeps your streak alive.</p>
+              </div>
+            </div>
+            <div class="slideshow-controls">
+              <button id="slide-prev" class="slide-arrow" aria-label="Previous slide">‹</button>
+              <div class="slideshow-dots" id="slideshow-dots"></div>
+              <button id="slide-next" class="slide-arrow" aria-label="Next slide">›</button>
+            </div>
+          </div>
+        </div>
 
         <div class="summary-cards">
           <div class="card">
@@ -132,9 +228,16 @@
             <tbody></tbody>
           </table>
         </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Badges</h3>
+          </div>
+          <div id="badge-list" class="badge-list"></div>
+          <p class="empty-state" id="badge-empty">No badges yet — complete real activities to earn them.</p>
+        </div>
       </section>
 
-      <!-- ===================== PAGE: TODAY (Logger + Daily View + Completion + Edit/Delete) ===================== -->
       <section id="page-today" class="page">
         <p class="page-subtitle">Log new activities and manage what's pending or done today.</p>
 
@@ -142,12 +245,15 @@
           <button id="add-activity-btn" class="btn-primary">+ New Activity</button>
         </div>
 
-        <!-- Activity Logger form (hidden until "+ New Activity" is clicked) -->
         <form id="logger-form" class="logger-form" hidden>
           <div class="form-row">
             <input type="text" id="logger-title" placeholder="Activity title" required />
             <input type="text" id="logger-notes" placeholder="Notes (optional)" />
           </div>
+          <label class="priority-line">
+            <input type="checkbox" id="logger-priority" />
+            High priority (Boss Challenge)
+          </label>
           <div class="form-actions">
             <button type="submit" class="btn-primary">Save Activity</button>
             <button type="button" id="logger-cancel" class="btn-secondary">Cancel</button>
@@ -191,7 +297,6 @@
         </div>
       </section>
 
-      <!-- ===================== PAGE: HISTORY ===================== -->
       <section id="page-history" class="page">
         <p class="page-subtitle">Review previously completed activities, grouped by date.</p>
 
@@ -206,10 +311,23 @@
         <p class="empty-state" id="history-empty" hidden>No completed activities found for this filter.</p>
       </section>
 
+      <section id="page-quests" class="page">
+        <p class="page-subtitle">Quests are generated from your logged activities — not from a separate game.</p>
+        <div class="panel">
+          <div class="panel-header"><h3>Active quests</h3></div>
+          <div id="active-quest-list"></div>
+          <p class="empty-state" id="active-quest-empty" hidden>No active quests yet. Log or complete activities to generate them.</p>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>Completed quests</h3></div>
+          <div id="done-quest-list"></div>
+          <p class="empty-state" id="done-quest-empty" hidden>No completed quests yet.</p>
+        </div>
+      </section>
+
     </div>
   </div>
 
-  <!-- Edit modal (shared by Today & History tables) -->
   <div id="edit-modal" class="modal" hidden>
     <div class="modal-card">
       <h3>Edit Activity</h3>
@@ -218,6 +336,10 @@
         <input type="text" id="edit-title" required />
         <label for="edit-notes">Notes</label>
         <input type="text" id="edit-notes" />
+        <label class="priority-line">
+          <input type="checkbox" id="edit-priority" />
+          High priority (Boss Challenge)
+        </label>
         <div class="form-actions">
           <button type="submit" class="btn-primary">Save Changes</button>
           <button type="button" id="edit-cancel" class="btn-secondary">Cancel</button>
@@ -226,7 +348,6 @@
     </div>
   </div>
 
-  <!-- Delete confirm modal -->
   <div id="delete-modal" class="modal" hidden>
     <div class="modal-card">
       <h3>Delete Activity?</h3>
@@ -238,6 +359,40 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <div id="rank-up-overlay" class="rank-up-overlay" hidden>
+    <div class="rank-up-card">
+      <p class="brand">Rank up</p>
+      <h3 id="rank-up-title">New rank</h3>
+      <p id="rank-up-text">You earned a new title from real completed work.</p>
+    </div>
+  </div>
+
+  <!-- ===================== INTERACTIVE FLOATING MENTOR WIDGET ===================== -->
+  <div id="mentor-floating-widget" class="mentor-floating-widget" hidden>
+    <div id="mentor-speech-bubble" class="mentor-speech-bubble" hidden>
+      <div class="speech-bubble-header">
+        <span id="bubble-mentor-name" class="bubble-mentor-name">MENTOR</span>
+        <button type="button" id="bubble-close-btn" class="bubble-close" aria-label="Close speech bubble">×</button>
+      </div>
+      <p id="bubble-mentor-text" class="bubble-mentor-text">Your motivational dialogue appears here.</p>
+      <div class="bubble-actions">
+        <button type="button" id="bubble-next-btn" class="bubble-next-btn">Next Advice 💬</button>
+      </div>
+      <div class="speech-tail" aria-hidden="true"></div>
+    </div>
+
+    <div id="mentor-figure-wrapper" class="mentor-figure-wrapper" role="button" tabindex="0" title="Click to speak with your mentor">
+      <img id="mentor-figure-img" class="mentor-figure-img" alt="Mentor figure" />
+      <div id="mentor-figure-fallback" class="mentor-figure-fallback" hidden>
+        <span id="mentor-fallback-icon" class="mentor-fallback-icon">★</span>
+        <span id="mentor-fallback-name" class="mentor-fallback-name">Mentor</span>
+      </div>
+      <div id="mentor-figure-nametag" class="mentor-figure-nametag">Mentor</div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script src="script.js?v=2"></script>
 </body>
 </html>
