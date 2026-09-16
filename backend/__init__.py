@@ -1,1 +1,0 @@
-# Daybook backend package

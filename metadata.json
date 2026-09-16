@@ -1,0 +1,6 @@
+{
+  "name": "Daybook",
+  "description": "Activity management system with themes, anime mentor guides, streaks, and quests.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

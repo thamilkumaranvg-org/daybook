@@ -194,11 +194,11 @@ h1, h2, h3, .brand, .btn-primary, .btn-secondary, .btn-danger,
 
 .login-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
   background: var(--surface);
   border: 3px solid var(--border);
   border-radius: var(--radius);
-  padding: 34px 30px;
+  padding: 30px 26px;
   box-shadow: 8px 8px 0 var(--shadow-color);
   animation: popIn 0.35s ease;
   position: relative;
@@ -218,32 +218,75 @@ h1, h2, h3, .brand, .btn-primary, .btn-secondary, .btn-danger,
 }
 
 .login-card h1 {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--text);
-  margin: 8px 0 6px;
+  margin: 8px 0 4px;
   letter-spacing: -0.01em;
 }
 
 .login-sub {
   font-size: 14px;
   color: var(--text-muted);
-  margin: 0 0 24px;
+  margin: 0 0 18px;
 }
 
-#login-form label {
+/* ============================= AUTH TABS ============================= */
+
+.auth-tabs {
+  display: flex;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: calc(var(--radius) - 6px);
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 9px 12px;
+  color: var(--text-muted);
+  border-radius: calc(var(--radius) - 10px);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-tab.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 2px 2px 0 var(--shadow-color);
+  border: 2px solid var(--border);
+  margin: -1px;
+}
+
+.auth-tab:hover:not(.active) {
+  color: var(--text);
+}
+
+.auth-pane {
+  animation: popIn 0.2s ease;
+}
+
+#login-form label,
+#signup-form label {
   display: block;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin: 16px 0 6px;
+  margin: 14px 0 5px;
 }
 
-#login-form input {
+#login-form input,
+#signup-form input {
   width: 100%;
-  padding: 12px 13px;
+  padding: 11px 13px;
   border: 2px solid var(--border);
   border-radius: calc(var(--radius) - 6px);
   font-size: 14px;
@@ -253,9 +296,59 @@ h1, h2, h3, .brand, .btn-primary, .btn-secondary, .btn-danger,
   transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-#login-form input:focus {
+#login-form input:focus,
+#signup-form input:focus {
   box-shadow: 3px 3px 0 var(--shadow-color);
   transform: translate(-1px, -1px);
+}
+
+.auth-field-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.auth-switch-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 16px;
+}
+
+.auth-link-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+.auth-link-btn:hover {
+  opacity: 0.85;
+}
+
+.auth-success-text {
+  color: var(--accent-good);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 10px 0 0;
+}
+
+.gate-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+.gate-actions-row .gate-back {
+  margin-top: 0;
 }
 
 .error-text {
@@ -1400,4 +1493,208 @@ h1, h2, h3, .brand, .btn-primary, .btn-secondary, .btn-danger,
     right: 32px;
   }
 }
+
+/* ==========================================================================
+   DAY-END COUNTDOWN WARNING & PENALTY BANNERS
+   ========================================================================== */
+
+.day-warning-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border: 2px solid var(--primary);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 var(--shadow-color);
+  animation: bannerSlideIn 0.3s ease-out;
+}
+
+.day-warning-banner.urgency-high {
+  border-color: var(--accent-bad);
+  background: var(--accent-bad-bg);
+}
+
+.day-warning-banner.urgency-medium {
+  border-color: var(--gold);
+  background: var(--surface);
+}
+
+@keyframes bannerSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.day-warning-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.warning-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.warning-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.warning-headline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.warning-headline strong {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.warning-countdown-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  background: var(--primary);
+  color: var(--primary-text);
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+}
+
+.day-warning-banner.urgency-high .warning-countdown-badge {
+  background: var(--accent-bad);
+  color: #FFFFFF;
+}
+
+#day-warning-msg {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.warning-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btn-warning-action {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 14px;
+  background: var(--primary);
+  color: var(--primary-text);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--shadow-color);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.btn-warning-action:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--shadow-color);
+}
+
+.btn-notif-toggle {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--shadow-color);
+  transition: background 0.15s;
+}
+
+.btn-notif-toggle:hover {
+  background: var(--bg);
+}
+
+.penalty-alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  background: var(--accent-bad-bg);
+  border: 2px solid var(--accent-bad);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 var(--accent-bad);
+}
+
+.penalty-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.penalty-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.penalty-details strong {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--accent-bad);
+}
+
+#penalty-alert-msg {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.penalty-dismiss-btn {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.penalty-dismiss-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 768px) {
+  .day-warning-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .warning-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 

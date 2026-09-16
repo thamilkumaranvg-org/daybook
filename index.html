@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Daybook — Activity Management System</title>
+  <title>Daybook</title>
+  <meta name="description" content="Activity management system with themes, anime mentor guides, streaks, and quests." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=Pirata+One&family=Cormorant+Garamond:wght@600;700&family=Oswald:wght@500;600;700&family=Bangers&family=Nunito:wght@500;700&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=2" />
@@ -26,12 +27,14 @@
       <h1>Choose your guide</h1>
       <p class="login-sub" id="mentor-step-sub">Pick one mentor for this session.</p>
       <div id="mentor-pick-grid" class="pick-grid"></div>
-      <button type="button" id="back-to-theme" class="btn-secondary gate-back">Back to themes</button>
+      <div class="gate-actions-row">
+        <button type="button" id="back-to-theme" class="btn-secondary gate-back">Back to themes</button>
+      </div>
     </div>
 
     <div class="login-card" id="step-login" hidden>
       <p class="brand" id="login-brand">Daybook</p>
-      <h1>Sign in to your dashboard</h1>
+      <h1 id="auth-heading">Sign in to your dashboard</h1>
       <p class="login-sub" id="login-lock-summary">Access your personal activity workspace.</p>
 
       <div id="login-selected-mentor-banner" class="selected-mentor-banner" hidden>
@@ -43,18 +46,61 @@
         </div>
       </div>
 
-      <form id="login-form">
-        <label for="username">Username</label>
-        <input type="text" id="username" value="user1" autocomplete="username" required />
+      <!-- Auth Mode Tabs (Sign In vs Create Account) -->
+      <div class="auth-tabs" role="tablist" aria-label="Account Access">
+        <button type="button" id="auth-tab-login" class="auth-tab active" role="tab" aria-selected="true">
+          Sign In
+        </button>
+        <button type="button" id="auth-tab-signup" class="auth-tab" role="tab" aria-selected="false">
+          Create Account
+        </button>
+      </div>
 
-        <label for="password">Passcode</label>
-        <input type="password" id="password" placeholder="Enter passcode" autocomplete="current-password" required />
+      <!-- Sign In Form Pane -->
+      <div id="login-pane" class="auth-pane">
+        <form id="login-form">
+          <label for="username">Username</label>
+          <input type="text" id="username" autocomplete="username" placeholder="Enter your username" required />
 
-        <p id="login-error" class="error-text" hidden>Incorrect username or passcode.</p>
+          <label for="password">Passcode</label>
+          <input type="password" id="password" placeholder="Enter passcode" autocomplete="current-password" required />
 
-        <button type="submit" class="btn-primary">Sign In</button>
-        <p class="login-hint">Demo credentials — user1 / demo1234</p>
-      </form>
+          <p id="login-error" class="error-text" hidden>Incorrect username or passcode.</p>
+
+          <button type="submit" id="login-submit-btn" class="btn-primary">Sign In</button>
+
+          <div class="auth-switch-prompt">
+            <span>Don't have an account yet?</span>
+            <button type="button" id="switch-to-signup" class="auth-link-btn">Create one now</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Sign Up Form Pane -->
+      <div id="signup-pane" class="auth-pane" hidden>
+        <form id="signup-form">
+          <label for="signup-username">Choose Username</label>
+          <input type="text" id="signup-username" placeholder="e.g. wanderer, zoro_fan" autocomplete="username" minlength="3" maxlength="24" required />
+          <span class="auth-field-hint">3–24 letters, numbers, hyphens or underscores</span>
+
+          <label for="signup-password">Create Passcode</label>
+          <input type="password" id="signup-password" placeholder="At least 4 characters" autocomplete="new-password" minlength="4" required />
+
+          <label for="signup-confirm">Confirm Passcode</label>
+          <input type="password" id="signup-confirm" placeholder="Re-enter your passcode" autocomplete="new-password" minlength="4" required />
+
+          <p id="signup-error" class="error-text" hidden></p>
+          <p id="signup-success" class="auth-success-text" hidden></p>
+
+          <button type="submit" id="signup-submit-btn" class="btn-primary">Create Account & Enter</button>
+
+          <div class="auth-switch-prompt">
+            <span>Already have an account?</span>
+            <button type="button" id="switch-to-signin" class="auth-link-btn">Sign in here</button>
+          </div>
+        </form>
+      </div>
+
       <button type="button" id="back-to-mentor" class="btn-secondary gate-back">Back to guides</button>
     </div>
   </section>
@@ -147,6 +193,34 @@
           </div>
         </div>
       </header>
+
+      <!-- Day Completion & Streak Warning Banner -->
+      <div id="day-warning-banner" class="day-warning-banner" hidden>
+        <div class="day-warning-content">
+          <span class="warning-icon" id="day-warning-icon">⏳</span>
+          <div class="warning-details">
+            <div class="warning-headline">
+              <strong id="day-warning-title">Day-End Warning</strong>
+              <span id="day-warning-countdown" class="warning-countdown-badge">--h --m left</span>
+            </div>
+            <p id="day-warning-msg">You have incomplete activities today. Complete them before midnight to maintain your streak and avoid XP penalty!</p>
+          </div>
+        </div>
+        <div class="warning-actions">
+          <button id="warning-action-btn" class="btn-warning-action" data-goto="today">View Today's Tasks</button>
+          <button id="enable-notif-btn" class="btn-notif-toggle" title="Enable browser alerts">🔔 Remind Me</button>
+        </div>
+      </div>
+
+      <!-- Streak Broken & XP Penalty Banner -->
+      <div id="penalty-alert-banner" class="penalty-alert-banner" hidden>
+        <span class="penalty-icon">⚠️</span>
+        <div class="penalty-details">
+          <strong>Streak Broken & XP Penalty Applied</strong>
+          <p id="penalty-alert-msg">Incomplete tasks from previous days broke your streak and incurred an XP deduction. Complete today's slate to start rebuilding your rank!</p>
+        </div>
+        <button id="penalty-dismiss-btn" class="penalty-dismiss-btn">Dismiss</button>
+      </div>
 
       <section id="page-dashboard" class="page active">
         <p class="page-subtitle">An overview of your activity, pulled from Today and History.</p>

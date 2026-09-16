@@ -1,6 +1,8 @@
 /* ==========================================================================
    Daybook — Activity Management System
-   Frontend talks to the FastAPI backend. Persistence is SQLite.
+   Frontend with persistent mobile login, device date/time daily reset,
+   streak & XP penalty system, day-end countdown alerts, and completion-based
+   mentor coaching.
    ========================================================================== */
 
 const API = "";
@@ -61,16 +63,34 @@ const THEME_CATALOG = {
   },
 };
 
-let token = sessionStorage.getItem("daybook_token") || "";
-let username = sessionStorage.getItem("daybook_user") || "user1";
+// ==========================================================================
+// PERSISTENT STORAGE (Mobile & Desktop App Reopen Resilient)
+// ==========================================================================
+
+function getStored(key) {
+  return localStorage.getItem(key) || sessionStorage.getItem(key) || "";
+}
+
+function setStored(key, val) {
+  try { localStorage.setItem(key, val); } catch (_) {}
+  try { sessionStorage.setItem(key, val); } catch (_) {}
+}
+
+function removeStored(key) {
+  try { localStorage.removeItem(key); } catch (_) {}
+  try { sessionStorage.removeItem(key); } catch (_) {}
+}
+
+let token = getStored("daybook_token") || "";
+let username = getStored("daybook_user") || "user1";
 let activities = [];
 let quests = [];
 let badges = [];
 let progress = null;
 let lastMentorKey = "";
 let lastRank = "";
-let pendingTheme = sessionStorage.getItem("daybook_pending_theme") || "";
-let pendingMentor = sessionStorage.getItem("daybook_pending_mentor") || "";
+let pendingTheme = getStored("daybook_pending_theme") || "";
+let pendingMentor = getStored("daybook_pending_mentor") || "";
 
 const MENTOR_ASSETS = {
   zoro: "zoro.webp",
@@ -97,6 +117,7 @@ const MENTOR_FALLBACK_ICONS = {
 let mentorQuotes = [];
 let currentQuoteIndex = 0;
 let speechBubbleTimer = null;
+let lastNotificationHour = null;
 
 // Streak milestones (days) used by renderStreak() progress bar
 const MILESTONES = [3, 7, 14, 30, 60, 100];
@@ -110,13 +131,15 @@ async function api(path, options = {}) {
   if (options.body && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
+  // Client device date passed with every request for synchronization
+  headers["X-Client-Date"] = todayKey();
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API}${path}`, { ...options, headers });
   if (res.status === 401) {
     token = "";
-    sessionStorage.removeItem("daybook_token");
-    sessionStorage.removeItem("daybook_user");
+    removeStored("daybook_token");
+    removeStored("daybook_user");
     showLogin();
     const err = new Error("Not signed in");
     err.status = 401;
@@ -160,25 +183,95 @@ async function loadGameLayer() {
 }
 
 /* ---------------------------------------------------------------------
-   LOGIN
+   LOGIN & GATE STEPS
    --------------------------------------------------------------------- */
 
 const loginScreen = document.getElementById("login-screen");
 const appEl = document.getElementById("app");
 const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
+const signupForm = document.getElementById("signup-form");
+const signupUsername = document.getElementById("signup-username");
+const signupPassword = document.getElementById("signup-password");
+const signupConfirm = document.getElementById("signup-confirm");
+const signupError = document.getElementById("signup-error");
+const signupSuccess = document.getElementById("signup-success");
+
+const authTabLogin = document.getElementById("auth-tab-login");
+const authTabSignup = document.getElementById("auth-tab-signup");
+const loginPane = document.getElementById("login-pane");
+const signupPane = document.getElementById("signup-pane");
+const authHeading = document.getElementById("auth-heading");
+const switchToSignup = document.getElementById("switch-to-signup");
+const switchToSignin = document.getElementById("switch-to-signin");
+
+let currentAuthMode = "login";
+
+function setAuthMode(mode) {
+  currentAuthMode = mode;
+  const isLogin = mode === "login";
+
+  if (authTabLogin) {
+    authTabLogin.classList.toggle("active", isLogin);
+    authTabLogin.setAttribute("aria-selected", isLogin ? "true" : "false");
+  }
+  if (authTabSignup) {
+    authTabSignup.classList.toggle("active", !isLogin);
+    authTabSignup.setAttribute("aria-selected", !isLogin ? "true" : "false");
+  }
+  if (loginPane) loginPane.hidden = !isLogin;
+  if (signupPane) signupPane.hidden = isLogin;
+  if (authHeading) {
+    authHeading.textContent = isLogin ? "Sign in to your dashboard" : "Create your Daybook account";
+  }
+  if (loginError) loginError.hidden = true;
+  if (signupError) signupError.hidden = true;
+  if (signupSuccess) signupSuccess.hidden = true;
+}
+
+if (authTabLogin) authTabLogin.addEventListener("click", () => setAuthMode("login"));
+if (authTabSignup) authTabSignup.addEventListener("click", () => setAuthMode("signup"));
+if (switchToSignup) switchToSignup.addEventListener("click", () => setAuthMode("signup"));
+if (switchToSignin) switchToSignin.addEventListener("click", () => setAuthMode("login"));
+
+async function completeAuthenticationAndEnter(authToken, authUser, isNewUser = false) {
+  token = authToken;
+  username = authUser;
+  setStored("daybook_token", token);
+  setStored("daybook_user", username);
+  setStored("daybook_pending_theme", pendingTheme);
+  setStored("daybook_pending_mentor", pendingMentor);
+
+  progress = await api("/api/session/start", {
+    method: "POST",
+    body: JSON.stringify({ theme: pendingTheme, mentor: pendingMentor }),
+  });
+  applyLockedTheme(progress.theme);
+  await loadActivities();
+  await loadGameLayer();
+  showApp();
+  renderAll();
+  initSlideshow();
+  if (isNewUser) {
+    showToast(`Account created! Welcome, ${username}`, "good");
+  } else {
+    showToast(`Welcome back, ${username}`, "good");
+  }
+  applyMentorFeedback(progress, true);
+}
 
 function showLogin() {
   appEl.hidden = true;
   loginScreen.hidden = false;
   pendingTheme = "";
   pendingMentor = "";
-  sessionStorage.removeItem("daybook_pending_theme");
-  sessionStorage.removeItem("daybook_pending_mentor");
+  removeStored("daybook_pending_theme");
+  removeStored("daybook_pending_mentor");
   const widget = document.getElementById("mentor-floating-widget");
   if (widget) widget.hidden = true;
   const bubble = document.getElementById("mentor-speech-bubble");
   if (bubble) bubble.hidden = true;
+  setAuthMode("login");
   showGateStep("theme");
 }
 
@@ -212,7 +305,7 @@ function buildThemePicks() {
     btn.innerHTML = `<span class="pick-mark">${meta.mark}</span><strong>${meta.label}</strong><span>${meta.sub}</span>`;
     btn.addEventListener("click", () => {
       pendingTheme = id;
-      sessionStorage.setItem("daybook_pending_theme", id);
+      setStored("daybook_pending_theme", id);
       applyLockedTheme(id);
       buildMentorPicks();
       showGateStep("mentor");
@@ -244,6 +337,7 @@ function updateLoginMentorBanner(mentorObj, themeObj) {
 function buildMentorPicks() {
   const grid = document.getElementById("mentor-pick-grid");
   const theme = THEME_CATALOG[pendingTheme];
+  if (!theme) return;
   document.getElementById("mentor-step-sub").textContent = `Guides for ${theme.label}. One choice, locked until logout.`;
   grid.innerHTML = "";
   theme.mentors.forEach((m) => {
@@ -259,7 +353,7 @@ function buildMentorPicks() {
     `;
     btn.addEventListener("click", () => {
       pendingMentor = m.id;
-      sessionStorage.setItem("daybook_pending_mentor", m.id);
+      setStored("daybook_pending_mentor", m.id);
       document.getElementById("login-lock-summary").textContent =
         `${theme.label} · ${m.name} (${m.title}) — locked for this session.`;
       updateLoginMentorBanner(m, theme);
@@ -272,60 +366,140 @@ function buildMentorPicks() {
 
 document.getElementById("back-to-theme").addEventListener("click", () => {
   pendingMentor = "";
-  sessionStorage.removeItem("daybook_pending_mentor");
+  removeStored("daybook_pending_mentor");
   const banner = document.getElementById("login-selected-mentor-banner");
   if (banner) banner.hidden = true;
   updateMentorWidget();
   showGateStep("theme");
 });
+
 document.getElementById("back-to-mentor").addEventListener("click", () => {
   showGateStep("mentor");
 });
 
-loginForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!pendingTheme || !pendingMentor) {
-    showGateStep("theme");
-    return;
-  }
-  const name = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value;
-  loginError.hidden = true;
+if (loginForm) {
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!pendingTheme || !pendingMentor) {
+      showGateStep("theme");
+      return;
+    }
+    const name = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    if (loginError) loginError.hidden = true;
 
-  try {
-    const data = await api("/api/login", {
-      method: "POST",
-      body: JSON.stringify({ username: name, password }),
-    });
-    token = data.token;
-    username = data.username;
-    sessionStorage.setItem("daybook_token", token);
-    sessionStorage.setItem("daybook_user", username);
-    progress = await api("/api/session/start", {
-      method: "POST",
-      body: JSON.stringify({ theme: pendingTheme, mentor: pendingMentor }),
-    });
-    applyLockedTheme(progress.theme);
-    await loadActivities();
-    await loadGameLayer();
-    showApp();
-    renderAll();
-    initSlideshow();
-    showToast(`Welcome back, ${username}`, "good");
-    applyMentorFeedback(progress, true);
-  } catch (err) {
-    if (err.status === 401) loginError.hidden = false;
-    else showToast(err.message, "bad");
-  }
-});
+    const submitBtn = document.getElementById("login-submit-btn");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Signing In...";
+    }
+
+    try {
+      const data = await api("/api/login", {
+        method: "POST",
+        body: JSON.stringify({ username: name, password }),
+      });
+      await completeAuthenticationAndEnter(data.token, data.username, false);
+    } catch (err) {
+      if (err.status === 401) {
+        if (loginError) {
+          loginError.textContent = "Incorrect username or passcode.";
+          loginError.hidden = false;
+        }
+      } else {
+        showToast(err.message || "Sign in failed", "bad");
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Sign In";
+      }
+    }
+  });
+}
+
+if (signupForm) {
+  signupForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!pendingTheme || !pendingMentor) {
+      showGateStep("theme");
+      return;
+    }
+    const name = signupUsername ? signupUsername.value.trim() : "";
+    const password = signupPassword ? signupPassword.value : "";
+    const confirm = signupConfirm ? signupConfirm.value : "";
+
+    if (signupError) signupError.hidden = true;
+    if (signupSuccess) signupSuccess.hidden = true;
+
+    if (name.length < 3) {
+      if (signupError) {
+        signupError.textContent = "Username must be at least 3 characters long.";
+        signupError.hidden = false;
+      }
+      return;
+    }
+    if (!/^[a-zA-Z0-9_\-]+$/.test(name)) {
+      if (signupError) {
+        signupError.textContent = "Username can only contain letters, numbers, hyphens, and underscores.";
+        signupError.hidden = false;
+      }
+      return;
+    }
+    if (password.length < 4) {
+      if (signupError) {
+        signupError.textContent = "Passcode must be at least 4 characters long.";
+        signupError.hidden = false;
+      }
+      return;
+    }
+    if (password !== confirm) {
+      if (signupError) {
+        signupError.textContent = "Passcodes do not match. Please verify.";
+        signupError.hidden = false;
+      }
+      return;
+    }
+
+    const submitBtn = document.getElementById("signup-submit-btn");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Creating Account...";
+    }
+
+    try {
+      const data = await api("/api/signup", {
+        method: "POST",
+        body: JSON.stringify({ username: name, password }),
+      });
+      if (signupSuccess) {
+        signupSuccess.textContent = "Account created! Starting your journey...";
+        signupSuccess.hidden = false;
+      }
+      await completeAuthenticationAndEnter(data.token, data.username, true);
+    } catch (err) {
+      if (signupError) {
+        signupError.textContent = err.message || "Failed to create account.";
+        signupError.hidden = false;
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Create Account & Enter";
+      }
+    }
+  });
+}
 
 document.getElementById("logout-btn").addEventListener("click", async () => {
   try {
     await api("/api/logout", { method: "POST" });
   } catch (_) { /* already signed out */ }
   token = "";
-  sessionStorage.removeItem("daybook_token");
-  sessionStorage.removeItem("daybook_user");
+  removeStored("daybook_token");
+  removeStored("daybook_user");
+  removeStored("daybook_pending_theme");
+  removeStored("daybook_pending_mentor");
   activities = [];
   quests = [];
   badges = [];
@@ -333,6 +507,8 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
   lastMentorKey = "";
   lastRank = "";
   document.getElementById("password").value = "";
+  if (signupPassword) signupPassword.value = "";
+  if (signupConfirm) signupConfirm.value = "";
   profileMenu.hidden = true;
   showLogin();
   showToast("Signed out", "good");
@@ -356,7 +532,7 @@ const PAGE_TITLES = {
 function goToPage(pageKey) {
   navItems.forEach((btn) => btn.classList.toggle("active", btn.dataset.page === pageKey));
   pages.forEach((section) => section.classList.toggle("active", section.id === `page-${pageKey}`));
-  pageTitle.textContent = PAGE_TITLES[pageKey];
+  pageTitle.textContent = PAGE_TITLES[pageKey] || "Daybook";
   document.getElementById("search-input").value = "";
   closeMobileSidebar();
   renderAll();
@@ -390,7 +566,7 @@ document.addEventListener("click", (e) => {
 });
 
 /* ---------------------------------------------------------------------
-   ACTIVITY LOGGER
+   ACTIVITY LOGGER (User-Only Added Activities)
    --------------------------------------------------------------------- */
 
 const addActivityBtn = document.getElementById("add-activity-btn");
@@ -420,6 +596,7 @@ loggerForm.addEventListener("submit", async (e) => {
         title,
         notes,
         priority: document.getElementById("logger-priority").checked,
+        date: todayKey(), // Strictly tied to device date
       }),
     });
     loggerForm.reset();
@@ -435,7 +612,7 @@ loggerForm.addEventListener("submit", async (e) => {
 });
 
 /* ---------------------------------------------------------------------
-   COMPLETION MARKER
+   COMPLETION TOGGLER
    --------------------------------------------------------------------- */
 
 async function toggleComplete(id) {
@@ -541,7 +718,111 @@ historyDateFilter.addEventListener("change", renderHistory);
 function matchesSearch(activity) {
   const q = searchInput.value.trim().toLowerCase();
   if (!q) return true;
-  return activity.title.toLowerCase().includes(q) || activity.notes.toLowerCase().includes(q);
+  return activity.title.toLowerCase().includes(q) || (activity.notes || "").toLowerCase().includes(q);
+}
+
+/* ---------------------------------------------------------------------
+   DAY-END COUNTDOWN WARNING & NOTIFICATION SYSTEM
+   (4h before, 3h before, 10 PM night warnings)
+   --------------------------------------------------------------------- */
+
+function checkDayEndWarnings() {
+  const now = new Date();
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+  const today = todayKey();
+  const todays = activities.filter((a) => a.date === today);
+  const pending = todays.filter((a) => !a.completed);
+  const banner = document.getElementById("day-warning-banner");
+  if (!banner) return;
+
+  if (todays.length > 0 && pending.length > 0) {
+    const hrsLeft = 23 - hour;
+    const minsLeft = 59 - minute;
+    const countdownStr = `${hrsLeft}h ${minsLeft}m left`;
+    const countdownEl = document.getElementById("day-warning-countdown");
+    const msgEl = document.getElementById("day-warning-msg");
+    const titleEl = document.getElementById("day-warning-title");
+    const iconEl = document.getElementById("day-warning-icon");
+    if (countdownEl) countdownEl.textContent = countdownStr;
+
+    if (hour >= 22) {
+      // 10:00 PM or later (before midnight)
+      banner.hidden = false;
+      banner.className = "day-warning-banner urgency-high";
+      if (iconEl) iconEl.textContent = "🚨";
+      if (titleEl) titleEl.textContent = "10 PM Final Warning";
+      if (msgEl) {
+        msgEl.textContent = `Urgent: You have ${pending.length} incomplete activity(s) tonight! At midnight, incomplete tasks will break your streak and deduct 15 XP each. Complete them now!`;
+      }
+      triggerSystemAlertOnce(hour, `10 PM Final Warning: ${pending.length} incomplete task(s) left tonight. Finish before midnight to protect your streak!`);
+    } else if (hour >= 21) {
+      // 3 hours before midnight (9:00 PM)
+      banner.hidden = false;
+      banner.className = "day-warning-banner urgency-high";
+      if (iconEl) iconEl.textContent = "⏳";
+      if (titleEl) titleEl.textContent = "3-Hour Warning (9:00 PM)";
+      if (msgEl) {
+        msgEl.textContent = `Only 3 hours remaining in the day! You have ${pending.length} pending activity(s). Finish them before 10 PM / midnight to protect your flame streak!`;
+      }
+      triggerSystemAlertOnce(hour, `3-Hour Warning: ${pending.length} pending tasks remain. Finish before 10 PM to protect your streak!`);
+    } else if (hour >= 20) {
+      // 4 hours before midnight (8:00 PM)
+      banner.hidden = false;
+      banner.className = "day-warning-banner urgency-medium";
+      if (iconEl) iconEl.textContent = "⚠️";
+      if (titleEl) titleEl.textContent = "4-Hour Reminder (8:00 PM)";
+      if (msgEl) {
+        msgEl.textContent = `4 hours left before the day completes. You have ${pending.length} pending activity(s). Complete them to maintain your streak and avoid an XP penalty.`;
+      }
+      triggerSystemAlertOnce(hour, `4-Hour Warning: 4 hours left today. Complete your ${pending.length} task(s) to avoid XP penalty.`);
+    } else {
+      banner.hidden = true;
+    }
+  } else {
+    banner.hidden = true;
+  }
+}
+
+function triggerSystemAlertOnce(hour, message) {
+  if (lastNotificationHour === hour) return;
+  lastNotificationHour = hour;
+  playMentorChime();
+  showToast(message, "bad");
+  if ("Notification" in window && Notification.permission === "granted") {
+    try {
+      new Notification("Daybook Streak Alert", {
+        body: message,
+        icon: "/assets/mentors/zoro.webp",
+      });
+    } catch (_) {}
+  }
+}
+
+const notifBtn = document.getElementById("enable-notif-btn");
+if (notifBtn) {
+  notifBtn.addEventListener("click", async () => {
+    if (!("Notification" in window)) {
+      showToast("Browser notifications are not supported on this device", "bad");
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    if (perm === "granted") {
+      showToast("Notifications enabled! You will be alerted at 8 PM, 9 PM, & 10 PM.", "good");
+      notifBtn.textContent = "✓ Alerts Active";
+    } else {
+      showToast("Notification permission was declined or dismissed.", "bad");
+    }
+  });
+}
+
+const penaltyDismissBtn = document.getElementById("penalty-dismiss-btn");
+if (penaltyDismissBtn) {
+  penaltyDismissBtn.addEventListener("click", () => {
+    const penaltyBanner = document.getElementById("penalty-alert-banner");
+    if (penaltyBanner) penaltyBanner.hidden = true;
+    sessionStorage.setItem("daybook_penalty_dismissed", "true");
+  });
 }
 
 /* ---------------------------------------------------------------------
@@ -556,6 +837,7 @@ function renderAll() {
   renderProgress();
   renderQuests();
   renderBadges();
+  checkDayEndWarnings();
 }
 
 function renderDashboard() {
@@ -593,6 +875,7 @@ function renderDashboard() {
 
 function renderToday() {
   const TODAY = todayKey();
+  // Strictly tasks logged on today's device date! Resets automatically on new day.
   const todays = activities.filter((a) => a.date === TODAY && matchesSearch(a));
   const pending = todays.filter((a) => !a.completed);
   const completed = todays.filter((a) => a.completed);
@@ -623,7 +906,7 @@ function fillTaskTable(selector, list) {
     if (a.priority) {
       const mark = document.createElement("span");
       mark.className = "priority-pill";
-      mark.textContent = "Priority";
+      mark.textContent = "Boss Challenge";
       titleCell.appendChild(document.createTextNode(" "));
       titleCell.appendChild(mark);
     }
@@ -657,9 +940,9 @@ function fillTaskTable(selector, list) {
 
 function renderHistory() {
   const TODAY = todayKey();
-  const completedPast = activities.filter((a) => a.completed && a.date !== TODAY);
+  const pastActivities = activities.filter((a) => a.date !== TODAY);
 
-  const uniqueDates = [...new Set(completedPast.map((a) => a.date))].sort((a, b) => (a < b ? 1 : -1));
+  const uniqueDates = [...new Set(pastActivities.map((a) => a.date))].sort((a, b) => (a < b ? 1 : -1));
   const currentFilterValue = historyDateFilter.value;
   historyDateFilter.innerHTML = '<option value="all">All dates</option>';
   uniqueDates.forEach((date) => {
@@ -673,7 +956,7 @@ function renderHistory() {
   }
 
   const activeFilter = historyDateFilter.value;
-  const filtered = completedPast.filter(
+  const filtered = pastActivities.filter(
     (a) => (activeFilter === "all" || a.date === activeFilter) && matchesSearch(a)
   );
 
@@ -693,13 +976,15 @@ function renderHistory() {
 
     const heading = document.createElement("p");
     heading.className = "history-date";
-    heading.textContent = date;
+    const dayTasks = grouped[date] || [];
+    const hasIncomplete = dayTasks.some((t) => !t.completed);
+    heading.innerHTML = `${date} ${hasIncomplete ? '<span style="color:var(--accent-bad);font-size:12px;font-weight:700;margin-left:8px;">(Incomplete — Penalty Applied)</span>' : '<span style="color:var(--accent-good);font-size:12px;font-weight:700;margin-left:8px;">(Clean Finish)</span>'}`;
     group.appendChild(heading);
 
     const table = document.createElement("table");
     table.className = "data-table";
     table.innerHTML = `
-      <thead><tr><th>Title</th><th>Notes</th><th>Completed At</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Status</th><th>Title</th><th>Notes</th><th>Time</th><th>Actions</th></tr></thead>
       <tbody></tbody>
     `;
     const tbody = table.querySelector("tbody");
@@ -707,14 +992,18 @@ function renderHistory() {
     grouped[date].forEach((a) => {
       const tr = document.createElement("tr");
 
+      const statusCell = document.createElement("td");
+      statusCell.innerHTML = `<span class="status-pill ${a.completed ? "status-done" : "status-pending"}">${a.completed ? "Completed" : "Incomplete"}</span>`;
+
       const titleCell = document.createElement("td");
       titleCell.textContent = a.title;
+      if (a.completed) titleCell.classList.add("row-title-done");
 
       const notesCell = document.createElement("td");
       notesCell.textContent = a.notes || "—";
 
       const timeCell = document.createElement("td");
-      timeCell.textContent = a.time || "—";
+      timeCell.textContent = a.time || (a.completed ? "Done" : "Missed");
 
       const actionsCell = document.createElement("td");
       actionsCell.className = "row-actions";
@@ -732,6 +1021,7 @@ function renderHistory() {
       actionsCell.appendChild(editBtn);
       actionsCell.appendChild(delBtn);
 
+      tr.appendChild(statusCell);
       tr.appendChild(titleCell);
       tr.appendChild(notesCell);
       tr.appendChild(timeCell);
@@ -753,11 +1043,18 @@ function renderProgress() {
   document.getElementById("sidebar-xp").textContent = progress.xp;
   const pct = progress.xp_for_next ? Math.round((progress.xp_into_level / progress.xp_for_next) * 100) : 0;
   document.getElementById("xp-progress-fill").style.width = `${pct}%`;
-  document.getElementById("sidebar-xp-next").textContent =
-    `${progress.xp_into_level} / ${progress.xp_for_next} to next level`;
+
+  let nextInfo = `${progress.xp_into_level} / ${progress.xp_for_next} to next level`;
+  if (progress.penalty_xp > 0) {
+    nextInfo += ` · (-${progress.penalty_xp} XP penalty)`;
+  }
+  document.getElementById("sidebar-xp-next").textContent = nextInfo;
+
   document.getElementById("mentor-name").textContent = progress.mentor_name || "Guide";
   document.getElementById("mentor-title").textContent = progress.mentor_title || "";
-  if (progress.mentor_text) document.getElementById("mentor-text").textContent = progress.mentor_text;
+  if (progress.mentor_text) {
+    document.getElementById("mentor-text").textContent = progress.mentor_text;
+  }
   const theme = THEME_CATALOG[progress.theme];
   if (theme) document.getElementById("mentor-mark").textContent = theme.mark;
   updateMentorWidget();
@@ -782,7 +1079,7 @@ function questCard(item, done = false) {
   const wrap = document.createElement("div");
   wrap.className = "quest-card" + (done ? " done" : "");
   wrap.innerHTML = `
-    <p class="quest-type">${escapeHtml(item.quest_type.replace("_", " "))}</p>
+    <p class="quest-type">${escapeHtml((item.quest_type || "").replace(/_/g, " "))}</p>
     <p class="quest-title">${escapeHtml(item.title_text)}</p>
     <div class="streak-progress-track">
       <div class="streak-progress-fill" style="width:${item.progress || 0}%"></div>
@@ -859,7 +1156,6 @@ function updateMentorWidget() {
   const widget = document.getElementById("mentor-floating-widget");
   if (!widget) return;
 
-  // Active mentor: from locked progress (if logged in) or pendingMentor (if pre-login)
   const mentorId = (progress && progress.mentor) || pendingMentor || "";
   const currentTheme = (progress && progress.theme) || pendingTheme || "onepiece";
 
@@ -985,6 +1281,7 @@ function nextMentorQuote() {
 }
 
 function computeStreak() {
+  // Client-side fallback if progress not yet loaded
   const completedDates = new Set(activities.filter((a) => a.completed).map((a) => a.date));
 
   let cursor = new Date();
@@ -1001,7 +1298,7 @@ function computeStreak() {
 }
 
 function renderStreak() {
-  const streak = computeStreak();
+  const streak = (progress && progress.streak !== undefined) ? progress.streak : computeStreak();
 
   document.getElementById("stat-streak").textContent = streak;
   document.getElementById("sidebar-streak-count").textContent = streak;
@@ -1018,8 +1315,10 @@ function renderStreak() {
       : `Next milestone: ${nextMilestone} days`;
 
   const messageEl = document.getElementById("streak-message");
-  if (streak === 0) {
-    messageEl.textContent = "Complete something today to start your streak.";
+  if (progress && progress.streak_broken && progress.incomplete_past_count > 0) {
+    messageEl.innerHTML = `<span style="color:var(--accent-bad);font-weight:700">⚠️ Streak Broken:</span> ${progress.incomplete_past_count} past task(s) were left incomplete (-${progress.penalty_xp} XP penalty applied).`;
+  } else if (streak === 0) {
+    messageEl.textContent = "Complete all today's tasks to build your streak.";
   } else if (streak < 3) {
     messageEl.textContent = "Good start — keep it going tomorrow.";
   } else if (streak < 7) {
@@ -1032,10 +1331,28 @@ function renderStreak() {
 
   const slideStreakText = document.getElementById("slide-streak-text");
   if (slideStreakText) {
-    slideStreakText.textContent =
-      streak === 0
-        ? "No active streak yet — complete a task today to start one."
-        : `You're on a ${streak}-day streak. Keep it alive!`;
+    if (progress && progress.streak_broken && progress.incomplete_past_count > 0) {
+      slideStreakText.textContent = `Streak broken from ${progress.incomplete_past_count} incomplete past task(s). Finish today's work to rebuild!`;
+    } else {
+      slideStreakText.textContent =
+        streak === 0
+          ? "No active streak yet — complete all tasks today to start one."
+          : `You're on a ${streak}-day streak. Keep it alive!`;
+    }
+  }
+
+  // Update penalty banner
+  const penaltyBanner = document.getElementById("penalty-alert-banner");
+  const penaltyMsg = document.getElementById("penalty-alert-msg");
+  if (penaltyBanner) {
+    if (progress && progress.streak_broken && progress.incomplete_past_count > 0 && !sessionStorage.getItem("daybook_penalty_dismissed")) {
+      penaltyBanner.hidden = false;
+      if (penaltyMsg) {
+        penaltyMsg.textContent = `${progress.incomplete_past_count} activity(s) from previous days were left incomplete, breaking your streak and deducting ${progress.penalty_xp} XP. Clear today's slate to start rebuilding your rank!`;
+      }
+    } else {
+      penaltyBanner.hidden = true;
+    }
   }
 }
 
@@ -1114,10 +1431,6 @@ function showToast(message, type = "good") {
   }, 2500);
 }
 
-/* ---------------------------------------------------------------------
-   THEMES
-   --------------------------------------------------------------------- */
-
 function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
@@ -1156,11 +1469,12 @@ if (bubbleCloseBtn) {
 }
 
 /* ---------------------------------------------------------------------
-   BOOT
+   BOOT SEQUENCE & SESSION RESTORATION
    --------------------------------------------------------------------- */
 
 buildThemePicks();
 applyLockedTheme(pendingTheme || "onepiece");
+
 if (pendingTheme && pendingMentor) {
   const theme = THEME_CATALOG[pendingTheme];
   const m = theme ? theme.mentors.find((x) => x.id === pendingMentor) : null;
@@ -1185,17 +1499,30 @@ if (pendingTheme && pendingMentor) {
     username = me.username;
     await loadActivities();
     await loadGameLayer();
+
     if (!progress || !progress.theme) {
-      token = "";
-      sessionStorage.removeItem("daybook_token");
-      sessionStorage.removeItem("daybook_user");
-      showLogin();
-      return;
+      if (pendingTheme && pendingMentor) {
+        progress = await api("/api/session/start", {
+          method: "POST",
+          body: JSON.stringify({ theme: pendingTheme, mentor: pendingMentor }),
+        });
+      } else {
+        token = "";
+        removeStored("daybook_token");
+        removeStored("daybook_user");
+        showLogin();
+        return;
+      }
     }
+
     applyLockedTheme(progress.theme);
     showApp();
     renderAll();
     initSlideshow();
+
+    // Start background countdown ticker for day-end reminders
+    setInterval(checkDayEndWarnings, 30000);
+    checkDayEndWarnings();
   } catch (_) {
     showLogin();
   }

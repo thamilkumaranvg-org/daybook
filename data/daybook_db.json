@@ -1,0 +1,664 @@
+{
+  "users": {
+    "1": {
+      "id": 1,
+      "username": "user1",
+      "password": "demo1234"
+    },
+    "2": {
+      "id": 2,
+      "username": "wanderer_01",
+      "password": "secretpass"
+    },
+    "3": {
+      "id": 3,
+      "username": "zora_fan",
+      "password": "zoro123"
+    },
+    "4": {
+      "id": 4,
+      "username": "user_1789562047473",
+      "password": "secret123"
+    },
+    "5": {
+      "id": 5,
+      "username": "user_1789562087410",
+      "password": "secret123"
+    },
+    "6": {
+      "id": 6,
+      "username": "thamil_vg",
+      "password": "thamil01"
+    },
+    "7": {
+      "id": 7,
+      "username": "user_1789566028215",
+      "password": "secret123"
+    }
+  },
+  "sessions": [
+    {
+      "id": 1,
+      "token": "6f33637eb89cba18cea99ff73d0d332587f5d11edb7c5374b2396898ab1f0052",
+      "userId": 1,
+      "theme": "onepiece",
+      "mentor": "zoro"
+    },
+    {
+      "id": 3,
+      "token": "d72a37fdc0191a05662532bd0e5ef81230a7aaf9466bfea994ca423893b0a65a",
+      "userId": 1,
+      "theme": null,
+      "mentor": null
+    },
+    {
+      "id": 4,
+      "token": "87fa539be8c9afb756d16d55263223853afc9170a9eec7f2ee4423a24d55361c",
+      "userId": 2,
+      "theme": null,
+      "mentor": null
+    },
+    {
+      "id": 5,
+      "token": "48baee2be03539b3660759454d318735bd61d63aad5f4597d1ae0ce06557f6c5",
+      "userId": 2,
+      "theme": "onepiece",
+      "mentor": "zoro"
+    },
+    {
+      "id": 6,
+      "token": "8f6dbca2078518ccdb6b6f58c80285e19ff28fd2ce7cc934114d56bfad31cb8c",
+      "userId": 1,
+      "theme": null,
+      "mentor": null
+    },
+    {
+      "id": 6,
+      "token": "2a64600b3e17e8986b06fe335c3216fcd9de52086572973f0a87dd1709b832c3",
+      "userId": 1,
+      "theme": null,
+      "mentor": null
+    },
+    {
+      "id": 7,
+      "token": "58d13df967368ef334406b61e829d7e6fa53441314e0fb2c44ecf377fe4b5f19",
+      "userId": 4,
+      "theme": null,
+      "mentor": null
+    },
+    {
+      "id": 8,
+      "token": "eb371f6e351ef98c71e22663c83e4c07bd0ca4ebaaf39deef3d12983e55d2ca6",
+      "userId": 5,
+      "theme": null,
+      "mentor": null
+    },
+    {
+      "id": 9,
+      "token": "95876a74a9b4365f3ded7e8a342c227f138e110877186250a327798a097f6c71",
+      "userId": 6,
+      "theme": "onepiece",
+      "mentor": "zoro"
+    },
+    {
+      "id": 10,
+      "token": "6699f1f72f636a9f6ab0f04a2e67be4087eaf1f262f9779a8ed6c2481d08143f",
+      "userId": 7,
+      "theme": null,
+      "mentor": null
+    }
+  ],
+  "activities": [
+    {
+      "id": 5,
+      "userId": 3,
+      "title": "wake up",
+      "notes": "",
+      "date": "2026-09-16",
+      "completed": true,
+      "time": "12:15 PM",
+      "priority": true,
+      "createdAt": "2026-09-16T12:14:15.721Z",
+      "completedAt": "2026-09-16T12:15:43.279Z"
+    }
+  ],
+  "quests": [
+    {
+      "id": 1,
+      "userId": 1,
+      "activityId": null,
+      "questType": "daily",
+      "theme": "onepiece",
+      "titleText": "Bounty board: close 3 logs today — including 'Morning sword practice'.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T12:01:42.809Z",
+      "completedAt": null
+    },
+    {
+      "id": 2,
+      "userId": 1,
+      "activityId": null,
+      "questType": "days_logged",
+      "theme": "onepiece",
+      "titleText": "Log Pose: Log real activities across 3 distinct sailing days.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T12:01:42.809Z",
+      "completedAt": null
+    },
+    {
+      "id": 3,
+      "userId": 1,
+      "activityId": null,
+      "questType": "speed_blitz",
+      "theme": "onepiece",
+      "titleText": "Swift Blade: Complete an activity in under 60 minutes from logging it.",
+      "target": 1,
+      "status": "completed",
+      "createdAt": "2026-09-16T12:01:42.809Z",
+      "completedAt": "2026-09-16T12:01:57.125Z"
+    },
+    {
+      "id": 4,
+      "userId": 1,
+      "activityId": null,
+      "questType": "morning_spark",
+      "theme": "onepiece",
+      "titleText": "Dawn Anchor: Complete your first log before midday sun (12:00 PM).",
+      "target": 1,
+      "status": "active",
+      "createdAt": "2026-09-16T12:01:42.809Z",
+      "completedAt": null
+    },
+    {
+      "id": 5,
+      "userId": 1,
+      "activityId": null,
+      "questType": "weekly",
+      "theme": "onepiece",
+      "titleText": "Week's voyage: finish 5 real logs before the next tide.",
+      "target": 5,
+      "status": "active",
+      "createdAt": "2026-09-16T12:01:42.809Z",
+      "completedAt": null
+    },
+    {
+      "id": 7,
+      "userId": 1,
+      "activityId": null,
+      "questType": "streak",
+      "theme": "onepiece",
+      "titleText": "Keep the crew's chain alive for 3 straight days.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T12:01:57.125Z",
+      "completedAt": null
+    },
+    {
+      "id": 8,
+      "userId": 1,
+      "activityId": null,
+      "questType": "daily",
+      "theme": "onepiece",
+      "titleText": "Bounty board: close 3 logs today — including 'Unfinished mission from yesterday'.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T12:02:05.778Z",
+      "completedAt": null
+    },
+    {
+      "id": 9,
+      "userId": 1,
+      "activityId": null,
+      "questType": "speed_blitz",
+      "theme": "onepiece",
+      "titleText": "Swift Blade: Complete an activity in under 60 minutes from logging it.",
+      "target": 1,
+      "status": "completed",
+      "createdAt": "2026-09-16T12:02:05.778Z",
+      "completedAt": "2026-09-16T12:02:17.220Z"
+    },
+    {
+      "id": 10,
+      "userId": 1,
+      "activityId": null,
+      "questType": "morning_spark",
+      "theme": "onepiece",
+      "titleText": "Dawn Anchor: Complete your first log before midday sun (12:00 PM).",
+      "target": 1,
+      "status": "active",
+      "createdAt": "2026-09-16T12:02:05.778Z",
+      "completedAt": null
+    },
+    {
+      "id": 11,
+      "userId": 3,
+      "activityId": null,
+      "questType": "daily",
+      "theme": "onepiece",
+      "titleText": "Bounty board: close 3 logs today — including 'wake up'.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T12:14:15.680Z",
+      "completedAt": null
+    },
+    {
+      "id": 12,
+      "userId": 3,
+      "activityId": null,
+      "questType": "days_logged",
+      "theme": "onepiece",
+      "titleText": "Log Pose: Log real activities across 3 distinct sailing days.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T12:14:15.680Z",
+      "completedAt": null
+    },
+    {
+      "id": 13,
+      "userId": 3,
+      "activityId": null,
+      "questType": "speed_blitz",
+      "theme": "onepiece",
+      "titleText": "Swift Blade: Complete an activity in under 60 minutes from logging it.",
+      "target": 1,
+      "status": "completed",
+      "createdAt": "2026-09-16T12:14:15.680Z",
+      "completedAt": "2026-09-16T12:15:43.280Z"
+    },
+    {
+      "id": 14,
+      "userId": 3,
+      "activityId": null,
+      "questType": "morning_spark",
+      "theme": "onepiece",
+      "titleText": "Dawn Anchor: Complete your first log before midday sun (12:00 PM).",
+      "target": 1,
+      "status": "active",
+      "createdAt": "2026-09-16T12:14:15.680Z",
+      "completedAt": null
+    },
+    {
+      "id": 15,
+      "userId": 3,
+      "activityId": null,
+      "questType": "weekly",
+      "theme": "onepiece",
+      "titleText": "Week's voyage: finish 5 real logs before the next tide.",
+      "target": 5,
+      "status": "active",
+      "createdAt": "2026-09-16T12:14:15.680Z",
+      "completedAt": null
+    },
+    {
+      "id": 17,
+      "userId": 3,
+      "activityId": null,
+      "questType": "clean_sweep",
+      "theme": "onepiece",
+      "titleText": "Deck Cleared: Finish all scheduled logs today with zero unfinished tasks.",
+      "target": 1,
+      "status": "active",
+      "createdAt": "2026-09-16T12:14:15.719Z",
+      "completedAt": null
+    },
+    {
+      "id": 18,
+      "userId": 3,
+      "activityId": null,
+      "questType": "focus",
+      "theme": "onepiece",
+      "titleText": "Chart a course through every log tagged 'wake'.",
+      "target": 1,
+      "status": "completed",
+      "createdAt": "2026-09-16T12:14:15.719Z",
+      "completedAt": "2026-09-16T12:15:43.280Z"
+    },
+    {
+      "id": 20,
+      "userId": 3,
+      "activityId": 5,
+      "questType": "boss",
+      "theme": "onepiece",
+      "titleText": "High-seas challenge: finish 'wake up' before sundown.",
+      "target": 1,
+      "status": "completed",
+      "createdAt": "2026-09-16T12:14:15.722Z",
+      "completedAt": "2026-09-16T12:15:43.280Z"
+    },
+    {
+      "id": 21,
+      "userId": 3,
+      "activityId": null,
+      "questType": "streak",
+      "theme": "onepiece",
+      "titleText": "Keep the crew's chain alive for 3 straight days.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T12:15:43.280Z",
+      "completedAt": null
+    },
+    {
+      "id": 22,
+      "userId": 4,
+      "activityId": null,
+      "questType": "daily",
+      "theme": "onepiece",
+      "titleText": "Bounty board: close 3 logs today — including 'Master Sword Technique'.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T12:34:07.538Z",
+      "completedAt": null
+    },
+    {
+      "id": 23,
+      "userId": 4,
+      "activityId": null,
+      "questType": "days_logged",
+      "theme": "onepiece",
+      "titleText": "Log Pose: Log real activities across 3 distinct sailing days.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T12:34:07.538Z",
+      "completedAt": null
+    },
+    {
+      "id": 24,
+      "userId": 4,
+      "activityId": null,
+      "questType": "speed_blitz",
+      "theme": "onepiece",
+      "titleText": "Swift Blade: Complete an activity in under 60 minutes from logging it.",
+      "target": 1,
+      "status": "completed",
+      "createdAt": "2026-09-16T12:34:07.539Z",
+      "completedAt": "2026-09-16T12:34:07.552Z"
+    },
+    {
+      "id": 25,
+      "userId": 4,
+      "activityId": null,
+      "questType": "morning_spark",
+      "theme": "onepiece",
+      "titleText": "Dawn Anchor: Complete your first log before midday sun (12:00 PM).",
+      "target": 1,
+      "status": "active",
+      "createdAt": "2026-09-16T12:34:07.539Z",
+      "completedAt": null
+    },
+    {
+      "id": 26,
+      "userId": 4,
+      "activityId": null,
+      "questType": "weekly",
+      "theme": "onepiece",
+      "titleText": "Week's voyage: finish 5 real logs before the next tide.",
+      "target": 5,
+      "status": "active",
+      "createdAt": "2026-09-16T12:34:07.539Z",
+      "completedAt": null
+    },
+    {
+      "id": 28,
+      "userId": 4,
+      "activityId": null,
+      "questType": "streak",
+      "theme": "onepiece",
+      "titleText": "Keep the crew's chain alive for 3 straight days.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T12:34:07.551Z",
+      "completedAt": null
+    },
+    {
+      "id": 29,
+      "userId": 5,
+      "activityId": null,
+      "questType": "daily",
+      "theme": "onepiece",
+      "titleText": "Bounty board: close 3 logs today — including 'Master Sword Technique'.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T12:34:47.448Z",
+      "completedAt": null
+    },
+    {
+      "id": 30,
+      "userId": 5,
+      "activityId": null,
+      "questType": "days_logged",
+      "theme": "onepiece",
+      "titleText": "Log Pose: Log real activities across 3 distinct sailing days.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T12:34:47.449Z",
+      "completedAt": null
+    },
+    {
+      "id": 31,
+      "userId": 5,
+      "activityId": null,
+      "questType": "speed_blitz",
+      "theme": "onepiece",
+      "titleText": "Swift Blade: Complete an activity in under 60 minutes from logging it.",
+      "target": 1,
+      "status": "completed",
+      "createdAt": "2026-09-16T12:34:47.449Z",
+      "completedAt": "2026-09-16T12:34:47.462Z"
+    },
+    {
+      "id": 32,
+      "userId": 5,
+      "activityId": null,
+      "questType": "morning_spark",
+      "theme": "onepiece",
+      "titleText": "Dawn Anchor: Complete your first log before midday sun (12:00 PM).",
+      "target": 1,
+      "status": "active",
+      "createdAt": "2026-09-16T12:34:47.450Z",
+      "completedAt": null
+    },
+    {
+      "id": 33,
+      "userId": 5,
+      "activityId": null,
+      "questType": "weekly",
+      "theme": "onepiece",
+      "titleText": "Week's voyage: finish 5 real logs before the next tide.",
+      "target": 5,
+      "status": "active",
+      "createdAt": "2026-09-16T12:34:47.450Z",
+      "completedAt": null
+    },
+    {
+      "id": 35,
+      "userId": 5,
+      "activityId": null,
+      "questType": "streak",
+      "theme": "onepiece",
+      "titleText": "Keep the crew's chain alive for 3 straight days.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T12:34:47.461Z",
+      "completedAt": null
+    },
+    {
+      "id": 36,
+      "userId": 7,
+      "activityId": null,
+      "questType": "daily",
+      "theme": "onepiece",
+      "titleText": "Bounty board: close 3 logs today — including 'Master Sword Technique'.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T13:40:44.915Z",
+      "completedAt": null
+    },
+    {
+      "id": 37,
+      "userId": 7,
+      "activityId": null,
+      "questType": "days_logged",
+      "theme": "onepiece",
+      "titleText": "Log Pose: Log real activities across 3 distinct sailing days.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T13:40:45.590Z",
+      "completedAt": null
+    },
+    {
+      "id": 38,
+      "userId": 7,
+      "activityId": null,
+      "questType": "speed_blitz",
+      "theme": "onepiece",
+      "titleText": "Swift Blade: Complete an activity in under 60 minutes from logging it.",
+      "target": 1,
+      "status": "completed",
+      "createdAt": "2026-09-16T13:40:46.277Z",
+      "completedAt": "2026-09-16T13:40:58.979Z"
+    },
+    {
+      "id": 39,
+      "userId": 7,
+      "activityId": null,
+      "questType": "morning_spark",
+      "theme": "onepiece",
+      "titleText": "Dawn Anchor: Complete your first log before midday sun (12:00 PM).",
+      "target": 1,
+      "status": "active",
+      "createdAt": "2026-09-16T13:40:46.976Z",
+      "completedAt": null
+    },
+    {
+      "id": 40,
+      "userId": 7,
+      "activityId": null,
+      "questType": "weekly",
+      "theme": "onepiece",
+      "titleText": "Week's voyage: finish 5 real logs before the next tide.",
+      "target": 5,
+      "status": "active",
+      "createdAt": "2026-09-16T13:40:47.670Z",
+      "completedAt": null
+    },
+    {
+      "id": 42,
+      "userId": 7,
+      "activityId": null,
+      "questType": "streak",
+      "theme": "onepiece",
+      "titleText": "Keep the crew's chain alive for 3 straight days.",
+      "target": 3,
+      "status": "active",
+      "createdAt": "2026-09-16T13:40:57.568Z",
+      "completedAt": null
+    }
+  ],
+  "badges": [
+    {
+      "id": 1,
+      "userId": 1,
+      "badgeKey": "rank:Academy Student",
+      "theme": "naruto",
+      "earnedAt": "2026-09-16T12:23:12.659Z"
+    }
+  ],
+  "progress": {
+    "1": {
+      "userId": 1,
+      "xp": 0,
+      "level": 1,
+      "theme": "naruto",
+      "mentor": "guy",
+      "streakCached": 0,
+      "mentorEvent": "login",
+      "mentorText": "THE MORNING CALLS! Register your youth workout goals immediately!"
+    },
+    "2": {
+      "userId": 2,
+      "xp": 0,
+      "level": 1,
+      "theme": "onepiece",
+      "mentor": "zoro",
+      "streakCached": 0,
+      "mentorEvent": "login",
+      "mentorText": "Your logbook is blank today. Add your first cut and let's get moving."
+    },
+    "3": {
+      "userId": 3,
+      "xp": 28,
+      "level": 1,
+      "theme": "onepiece",
+      "mentor": "zoro",
+      "streakCached": 1,
+      "mentorEvent": "status",
+      "mentorText": "All 1 tasks cleared today. Sharp and disciplined. Rest your blade."
+    },
+    "4": {
+      "userId": 4,
+      "xp": 0,
+      "level": 1,
+      "theme": "onepiece",
+      "mentor": "zoro",
+      "streakCached": 0,
+      "mentorEvent": "status",
+      "mentorText": "Your logbook is blank today. Add your first cut and let's get moving."
+    },
+    "5": {
+      "userId": 5,
+      "xp": 0,
+      "level": 1,
+      "theme": "onepiece",
+      "mentor": "zoro",
+      "streakCached": 0,
+      "mentorEvent": "status",
+      "mentorText": "Your logbook is blank today. Add your first cut and let's get moving."
+    },
+    "6": {
+      "userId": 6,
+      "xp": 0,
+      "level": 1,
+      "theme": "onepiece",
+      "mentor": "zoro",
+      "streakCached": 0,
+      "mentorEvent": "login",
+      "mentorText": "Your logbook is blank today. Add your first cut and let's get moving."
+    },
+    "7": {
+      "userId": 7,
+      "xp": 0,
+      "level": 1,
+      "theme": "onepiece",
+      "mentor": "zoro",
+      "streakCached": 0,
+      "mentorEvent": "status",
+      "mentorText": "Your logbook is blank today. Add your first cut and let's get moving."
+    },
+    "9": {
+      "userId": 9,
+      "xp": 0,
+      "level": 1,
+      "theme": "onepiece",
+      "mentor": "zoro",
+      "streakCached": 0,
+      "mentorEvent": "status",
+      "mentorText": "Your logbook is blank today. Add your first cut and let's get moving."
+    },
+    "11": {
+      "userId": 11,
+      "xp": 0,
+      "level": 1,
+      "theme": "onepiece",
+      "mentor": "zoro",
+      "streakCached": 0,
+      "mentorEvent": "status",
+      "mentorText": "Your logbook is blank today. Add your first cut and let's get moving."
+    }
+  },
+  "nextUserId": 8,
+  "nextActivityId": 9,
+  "nextQuestId": 43,
+  "nextBadgeId": 2
+}
