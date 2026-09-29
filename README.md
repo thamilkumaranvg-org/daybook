@@ -1,67 +1,71 @@
-# Daybook — Personal Activity Management System
+# Daybook — Activity Management & Gamified Habit Tracker
 
-Daybook lets a single user sign in, log daily activities, mark them complete, edit or delete them, and review past completed work. An additive **quest layer** turns those real logs into XP, ranks, badges, and one-way mentor messages. The app is a browser UI served by **FastAPI** with data in **SQLite**.
+Daybook is an activity management and habit tracking system with gamified quest boards, mentors (One Piece, Bleach, Naruto, Black Clover), XP leveling, and achievements.
 
-## Features (SRS scope)
+The application is fully configured to run simultaneously in **Google AI Studio** and on **Vercel**.
 
-- Sign in / sign out (`user1`)
-- Add activities (title required, notes optional, optional high-priority flag)
-- Toggle complete / pending
-- Today view split into Pending and Completed
-- Edit and delete with confirmation
-- History of completed past activities, grouped by date, with a date filter
-- Header search, dashboard stats, streak, highlights slideshow, badges
-- **Pre-login theme + mentor selection** (locked until logout): One Piece, Bleach, Naruto, Black Clover
-- Quest Board generated from logged activities (daily, streak, focus, weekly, boss)
-- XP, level, theme-aware rank, and original mentor lines (no source-material dialogue)
+---
 
-## Requirements
+## 🚀 Deploying to Vercel (Step-by-Step)
 
-- Python 3.10 or newer
-- A modern web browser
+You can deploy Daybook to Vercel in just a few clicks!
 
-## Setup and run
+### Method 1: Deploy via GitHub (Recommended)
 
-From the project root:
+1. **Push this repository to GitHub**:
+   - Create a new GitHub repository (e.g., `daybook`).
+   - Push your code to GitHub:
+     ```bash
+     git add .
+     git commit -m "Configure Vercel deployment"
+     git branch -M main
+     git remote add origin https://github.com/YOUR_USERNAME/daybook.git
+     git push -u origin main
+     ```
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
-```
+2. **Import into Vercel**:
+   - Go to [vercel.com](https://vercel.com) and log in.
+   - Click **"Add New..."** → **"Project"**.
+   - Select your `daybook` repository from GitHub.
+   - Framework Preset: **Other** (leave build command and output directory as default).
 
-On macOS/Linux:
+3. **Configure Environment Variables (Optional for shared database)**:
+   - In the Vercel project configuration, expand **Environment Variables**:
+     - `SUPABASE_URL` = your Supabase project URL (e.g., `https://xyz.supabase.co`)
+     - `SUPABASE_KEY` = your Supabase service role or anon key
+     - `DATABASE_URL` = your Supabase connection string (optional)
+   *(Note: Setting Supabase credentials ensures both AI Studio and Vercel share the same real-time persistent database).*
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
-```
+4. **Click "Deploy"**:
+   - Vercel will build and deploy the application in under 30 seconds!
+   - You will get a live URL like `https://daybook-xyz.vercel.app`.
 
-Open [http://127.0.0.1:8000](http://127.0.0.1:8000).
+---
 
-1. Pick a theme, then a mentor.
-2. Sign in with **user1** / **demo1234**.
-3. Theme and mentor stay locked until you sign out.
+### Method 2: Deploy via Vercel CLI
 
-`daybook.db` is created on first start. Existing databases are migrated (priority column, quest tables) without dropping activity data.
+If you prefer deploying directly from your terminal:
 
-## Tests
+1. Install the Vercel CLI (if not already installed):
+   ```bash
+   npm i -g vercel
+   ```
 
-```powershell
-.\.venv\Scripts\Activate.ps1
-python -m pytest -q
-```
+2. Run the deploy command from the project root:
+   ```bash
+   vercel
+   ```
 
-## Project layout
+3. When deploying for production:
+   ```bash
+   vercel --prod
+   ```
 
-| Path | Role |
-|---|---|
-| `index.html`, `style.css`, `script.js` | Frontend (separate files) |
-| `backend/` | FastAPI app, models, quest/XP/mentor logic |
-| `daybook.db` | SQLite database (created at runtime) |
-| `SRS.md`, `REQUIREMENTS.md` | Source of truth for scope |
+---
 
-Do not open `index.html` as a file. Serve it through the FastAPI app so login and the quest APIs can reach `/api`.
+## 🛠️ Architecture & Vercel Compatibility
+
+- **Serverless API Handler**: `/api/index.js` wraps the Express app (`server.js`) into a standard Vercel serverless function.
+- **Routing & Rewrites**: `vercel.json` serves frontend assets (`index.html`, `style.css`, `script.js`, `manifest.json`, `assets/`) through Vercel's global CDN and routes `/api/*` to the serverless function.
+- **Dual Execution**: When running locally or in AI Studio, `server.js` listens on port 3000. When running on Vercel, serverless function invocation handles HTTP requests automatically without port binding conflicts.
+- **Database Storage**: Uses Supabase PostgreSQL when credentials are provided, with resilient fallback handling in serverless environments.

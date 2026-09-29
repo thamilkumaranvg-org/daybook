@@ -15,11 +15,31 @@ function todayKey() {
   return formatDateKey(new Date());
 }
 
+function tomorrowKey() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return formatDateKey(d);
+}
+
 function daysAgoKey(n) {
   const d = new Date();
   d.setDate(d.getDate() - n);
   return formatDateKey(d);
 }
+
+const MENTOR_EVENING_RECOMMENDATIONS = {
+  zoro: "Before night falls, schedule your training for tomorrow. A dull blade waits for morning; a sharp one prepares tonight.",
+  luffy: "Hey! Before night gets here, let's schedule tomorrow's adventures! That way we can wake up ready to blast through them!",
+  rayleigh: "The sun is setting on today's voyage. Before night settles, chart and schedule your activities for tomorrow.",
+  ichigo: "Before night falls, schedule your duties for tomorrow. Don't wake up scrambling to figure out what you need to do.",
+  urahara: "Before the night draws in, might I recommend scheduling tomorrow's tasks? A little foresight prevents endless complications.",
+  aizen: "Before the evening concludes, schedule your objectives for tomorrow. True mastery begins with structuring what comes next.",
+  naruto: "Hey, before night comes, let's schedule tomorrow's missions right now! A true ninja always plans ahead, dattebayo!",
+  kakashi: "Debriefing before night: schedule your mission roster for tomorrow. Tomorrow's victory is prepared in the field tonight.",
+  guy: "SPLENDID DEDICATION! Before night claims the sky, schedule tomorrow's youthful challenges with blazing passion!",
+  yami: "Evening's setting in. Before you call it a night, schedule tomorrow's jobs so you don't wake up slacking off.",
+  asta: "Before night falls, let's schedule our training and duties for tomorrow! Push past your limits every single day!",
+};
 
 const THEME_CATALOG = {
   onepiece: {
@@ -115,9 +135,18 @@ const MENTOR_FALLBACK_ICONS = {
 };
 
 let mentorQuotes = [];
+let mentorRealAdvises = [];
+let mentorAchievementQuotes = {};
+let mentorStatusQuotes = {};
 let currentQuoteIndex = 0;
+let currentAdviceIndex = 0;
 let speechBubbleTimer = null;
 let lastNotificationHour = null;
+let isBubbleInAchievementMode = false;
+let currentAchievementText = "";
+let currentAchievementCategory = "Achievement";
+let isAudioMuted = getStored("daybook_audio_muted") === "true";
+let musicPlayingTimer = null;
 
 // Streak milestones (days) used by renderStreak() progress bar
 const MILESTONES = [3, 7, 14, 30, 60, 100];
@@ -170,8 +199,11 @@ async function loadGameLayer() {
     badges = await api("/api/badges");
     try {
       const mentorMsg = await api("/api/mentor/message");
-      if (mentorMsg && mentorMsg.quotes && mentorMsg.quotes.length > 0) {
-        mentorQuotes = mentorMsg.quotes;
+      if (mentorMsg) {
+        mentorRealAdvises = mentorMsg.real_advises || mentorMsg.quotes || [];
+        mentorAchievementQuotes = mentorMsg.achievement_quotes || {};
+        mentorStatusQuotes = mentorMsg.status_quotes || {};
+        mentorQuotes = mentorRealAdvises.length > 0 ? mentorRealAdvises : (mentorMsg.quotes || []);
       }
     } catch (_) {}
   } catch (_) {
@@ -179,6 +211,9 @@ async function loadGameLayer() {
     quests = [];
     badges = [];
     mentorQuotes = [];
+    mentorRealAdvises = [];
+    mentorAchievementQuotes = {};
+    mentorStatusQuotes = {};
   }
 }
 
@@ -566,20 +601,38 @@ document.addEventListener("click", (e) => {
 });
 
 /* ---------------------------------------------------------------------
-   ACTIVITY LOGGER (User-Only Added Activities)
+   ACTIVITY LOGGER (User-Only Added Activities & Scheduling)
    --------------------------------------------------------------------- */
 
 const addActivityBtn = document.getElementById("add-activity-btn");
 const loggerForm = document.getElementById("logger-form");
 const loggerCancel = document.getElementById("logger-cancel");
+const loggerDateInput = document.getElementById("logger-date");
+
+if (loggerDateInput) {
+  loggerDateInput.value = todayKey();
+  loggerDateInput.min = todayKey();
+}
 
 addActivityBtn.addEventListener("click", () => {
   loggerForm.hidden = !loggerForm.hidden;
-  if (!loggerForm.hidden) document.getElementById("logger-title").focus();
+  if (!loggerForm.hidden) {
+    if (loggerDateInput && !loggerDateInput.value) {
+      loggerDateInput.value = todayKey();
+    }
+    if (loggerDateInput) {
+      loggerDateInput.min = todayKey();
+    }
+    document.getElementById("logger-title").focus();
+  }
 });
 
 loggerCancel.addEventListener("click", () => {
   loggerForm.reset();
+  if (loggerDateInput) {
+    loggerDateInput.value = todayKey();
+    loggerDateInput.min = todayKey();
+  }
   loggerForm.hidden = true;
 });
 
@@ -587,6 +640,7 @@ loggerForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const title = document.getElementById("logger-title").value.trim();
   const notes = document.getElementById("logger-notes").value.trim();
+  const scheduledDate = (loggerDateInput && loggerDateInput.value) ? loggerDateInput.value : todayKey();
   if (!title) return;
 
   try {
@@ -596,15 +650,20 @@ loggerForm.addEventListener("submit", async (e) => {
         title,
         notes,
         priority: document.getElementById("logger-priority").checked,
-        date: todayKey(), // Strictly tied to device date
+        date: scheduledDate, // Either today or scheduled future date
       }),
     });
     loggerForm.reset();
+    if (loggerDateInput) {
+      loggerDateInput.value = todayKey();
+      loggerDateInput.min = todayKey();
+    }
     loggerForm.hidden = true;
     await loadActivities();
     await loadGameLayer();
     renderAll();
-    showToast("Activity added", "good");
+    const isFuture = scheduledDate > todayKey();
+    showToast(isFuture ? `Activity scheduled for ${scheduledDate}` : "Activity added", "good");
     applyMentorFeedback(progress);
   } catch (err) {
     showToast(err.message, "bad");
@@ -622,7 +681,13 @@ async function toggleComplete(id) {
     await loadGameLayer();
     renderAll();
     showToast(updated.completed ? "Marked complete" : "Marked pending", "good");
-    applyMentorFeedback(progress);
+    if (updated.completed) {
+      const stateToUse = updated.progress || progress;
+      handleAchievementCelebration(stateToUse, stateToUse?.achievement_type || "activity_complete");
+      promptInstallIfAppLiked();
+    } else {
+      applyMentorFeedback(updated.progress || progress);
+    }
   } catch (err) {
     showToast(err.message, "bad");
   }
@@ -636,6 +701,7 @@ const editModal = document.getElementById("edit-modal");
 const editForm = document.getElementById("edit-form");
 const editTitleInput = document.getElementById("edit-title");
 const editNotesInput = document.getElementById("edit-notes");
+const editDateInput = document.getElementById("edit-date");
 let editingId = null;
 
 function openEditModal(id) {
@@ -644,6 +710,9 @@ function openEditModal(id) {
   editingId = id;
   editTitleInput.value = activity.title;
   editNotesInput.value = activity.notes;
+  if (editDateInput) {
+    editDateInput.value = activity.date || todayKey();
+  }
   document.getElementById("edit-priority").checked = !!activity.priority;
   editModal.hidden = false;
 }
@@ -657,12 +726,14 @@ editForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const newTitle = editTitleInput.value.trim();
   if (!newTitle) return;
+  const newDate = editDateInput ? editDateInput.value : undefined;
   try {
     await api(`/api/activities/${editingId}`, {
       method: "PUT",
       body: JSON.stringify({
         title: newTitle,
         notes: editNotesInput.value.trim(),
+        date: newDate,
         priority: document.getElementById("edit-priority").checked,
       }),
     });
@@ -681,8 +752,18 @@ editForm.addEventListener("submit", async (e) => {
 const deleteModal = document.getElementById("delete-modal");
 let deletingId = null;
 
-function openDeleteModal(id) {
+function openDeleteModal(id, isScheduled = false) {
   deletingId = id;
+  const modalTitle = document.querySelector("#delete-modal h3");
+  const modalText = document.querySelector("#delete-modal p");
+  if (modalTitle) {
+    modalTitle.textContent = isScheduled ? "Remove Scheduled Activity?" : "Delete Activity?";
+  }
+  if (modalText) {
+    modalText.textContent = isScheduled
+      ? "This will remove this activity from your scheduled activities."
+      : "This will permanently remove the activity. This cannot be undone.";
+  }
   deleteModal.hidden = false;
 }
 
@@ -699,7 +780,7 @@ document.getElementById("delete-confirm-btn").addEventListener("click", async ()
     await loadActivities();
     await loadGameLayer();
     renderAll();
-    showToast("Activity deleted", "bad");
+    showToast("Activity removed", "good");
   } catch (err) {
     showToast(err.message, "bad");
   }
@@ -826,6 +907,232 @@ if (penaltyDismissBtn) {
 }
 
 /* ---------------------------------------------------------------------
+   MENTOR EVENING SCHEDULE RECOMMENDATION
+   --------------------------------------------------------------------- */
+
+let eveningBannerDismissedForSession = false;
+
+function checkEveningScheduleRecommendation() {
+  const banner = document.getElementById("evening-schedule-banner");
+  if (!banner) return;
+
+  const TODAY = todayKey();
+  const TOMORROW = tomorrowKey();
+  const hour = new Date().getHours();
+
+  // "Before night": evening hours (4:00 PM to 9:59 PM) before night cutoff
+  const isPreNight = hour >= 16 && hour < 22;
+
+  // Has user already scheduled any activity for tomorrow?
+  const hasScheduledTomorrow = activities.some((a) => a.date === TOMORROW);
+
+  if (hasScheduledTomorrow || !isPreNight || eveningBannerDismissedForSession) {
+    banner.hidden = true;
+    return;
+  }
+
+  // Mentor customized recommendation
+  const mentorId = (progress && progress.mentor) || getStored("daybook_pending_mentor") || "zoro";
+  const mentorName = (progress && progress.mentor_name) || "Mentor";
+  const msg = MENTOR_EVENING_RECOMMENDATIONS[mentorId] || MENTOR_EVENING_RECOMMENDATIONS.zoro;
+
+  const titleEl = document.getElementById("evening-schedule-title");
+  const msgEl = document.getElementById("evening-schedule-msg");
+  if (titleEl) titleEl.textContent = `${mentorName}'s Evening Recommendation`;
+  if (msgEl) msgEl.textContent = msg;
+
+  banner.hidden = false;
+
+  // At least once per day before night, the mentor proactively recommends scheduling activities for tomorrow
+  const recKey = `daybook_evening_schedule_rec_${TODAY}`;
+  if (!getStored(recKey)) {
+    setStored(recKey, "true");
+    showMentorSpeechBubble(msg, 8);
+    const mentorTextEl = document.getElementById("mentor-text");
+    if (mentorTextEl) mentorTextEl.textContent = msg;
+    playMentorChime();
+  }
+}
+
+const eveningScheduleBtn = document.getElementById("evening-schedule-btn");
+if (eveningScheduleBtn) {
+  eveningScheduleBtn.addEventListener("click", () => {
+    const loggerForm = document.getElementById("logger-form");
+    const loggerDateInput = document.getElementById("logger-date");
+    const loggerTitleInput = document.getElementById("logger-title");
+    if (loggerForm) loggerForm.hidden = false;
+    if (loggerDateInput) {
+      loggerDateInput.value = tomorrowKey();
+      loggerDateInput.min = todayKey();
+    }
+    if (loggerTitleInput) loggerTitleInput.focus();
+    loggerForm?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+}
+
+const eveningDismissBtn = document.getElementById("evening-dismiss-btn");
+if (eveningDismissBtn) {
+  eveningDismissBtn.addEventListener("click", () => {
+    const banner = document.getElementById("evening-schedule-banner");
+    if (banner) banner.hidden = true;
+    eveningBannerDismissedForSession = true;
+  });
+}
+
+/* ---------------------------------------------------------------------
+   PWA INSTALLATION & SERVICE WORKER CONTROLLER
+   --------------------------------------------------------------------- */
+
+let deferredInstallPrompt = null;
+let isAppInstalled = false;
+const isIOSDevice = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+const isStandaloneMode =
+  window.matchMedia("(display-mode: standalone)").matches ||
+  window.navigator.standalone === true;
+
+// Register Service Worker for offline support & PWA installability
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js", { scope: "/" })
+      .then((reg) => {
+        console.log("[PWA] ServiceWorker registered with scope:", reg.scope);
+      })
+      .catch((err) => {
+        console.warn("[PWA] ServiceWorker registration failed:", err);
+      });
+  });
+}
+
+function updateInstallUIVisibility() {
+  const headerBtn = document.getElementById("header-install-btn");
+  const modal = document.getElementById("pwa-install-modal");
+
+  if (isStandaloneMode || isAppInstalled) {
+    if (headerBtn) headerBtn.hidden = true;
+    if (modal) modal.hidden = true;
+    return;
+  }
+
+  // Show the header install button on all modern devices
+  if (headerBtn) {
+    headerBtn.hidden = false;
+  }
+}
+
+function openInstallModal() {
+  if (isStandaloneMode || isAppInstalled) {
+    showToast("Daybook is already installed and running!", "good");
+    return;
+  }
+
+  const modal = document.getElementById("pwa-install-modal");
+  const iosBox = document.getElementById("pwa-ios-instructions");
+  if (!modal) return;
+
+  if (isIOSDevice && !deferredInstallPrompt) {
+    if (iosBox) iosBox.hidden = false;
+  } else {
+    if (iosBox) iosBox.hidden = true;
+  }
+
+  modal.hidden = false;
+}
+
+function dismissInstallModal() {
+  const modal = document.getElementById("pwa-install-modal");
+  if (modal) modal.hidden = true;
+  sessionStorage.setItem("daybook_install_popup_dismissed", "true");
+}
+
+async function handleInstallAction() {
+  if (deferredInstallPrompt) {
+    try {
+      await deferredInstallPrompt.prompt();
+      const choice = await deferredInstallPrompt.userChoice;
+      if (choice && choice.outcome === "accepted") {
+        isAppInstalled = true;
+        updateInstallUIVisibility();
+        showToast("Daybook app installed! You can now launch it from your desktop or home screen.", "good");
+      }
+      deferredInstallPrompt = null;
+    } catch (err) {
+      console.warn("[PWA] Prompt error:", err);
+    }
+    const modal = document.getElementById("pwa-install-modal");
+    if (modal) modal.hidden = true;
+  } else if (isIOSDevice) {
+    const iosBox = document.getElementById("pwa-ios-instructions");
+    if (iosBox) iosBox.hidden = false;
+    showToast("Follow the Safari share steps to add to your Home Screen", "good");
+  } else {
+    // Chromium / Desktop direct prompt or fallback instructions
+    showToast("To install Daybook, click the Install icon (⤓) in your browser address bar.", "good");
+    const modal = document.getElementById("pwa-install-modal");
+    if (modal) modal.hidden = true;
+  }
+}
+
+function promptInstallIfAppLiked() {
+  if (isStandaloneMode || isAppInstalled) return;
+  if (sessionStorage.getItem("daybook_install_popup_dismissed")) return;
+
+  // Gentle delay after user liked the app / completed a task
+  setTimeout(() => {
+    openInstallModal();
+  }, 900);
+}
+
+// Listen to beforeinstallprompt event
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  updateInstallUIVisibility();
+
+  // If user hasn't dismissed the popup in this session, show prompt alert after brief orientation
+  if (!sessionStorage.getItem("daybook_install_popup_dismissed") && !isStandaloneMode) {
+    setTimeout(() => {
+      openInstallModal();
+    }, 4500);
+  }
+});
+
+// Listen to appinstalled event
+window.addEventListener("appinstalled", () => {
+  isAppInstalled = true;
+  deferredInstallPrompt = null;
+  updateInstallUIVisibility();
+  showToast("Daybook installed successfully! Enjoy your standalone app.", "good");
+  const modal = document.getElementById("pwa-install-modal");
+  if (modal) modal.hidden = true;
+});
+
+// Wire PWA UI Event Listeners
+const headerInstallBtn = document.getElementById("header-install-btn");
+if (headerInstallBtn) {
+  headerInstallBtn.addEventListener("click", () => openInstallModal());
+}
+
+const pwaConfirmBtn = document.getElementById("pwa-install-confirm-btn");
+if (pwaConfirmBtn) {
+  pwaConfirmBtn.addEventListener("click", handleInstallAction);
+}
+
+const pwaDismissBtn = document.getElementById("pwa-install-dismiss-btn");
+if (pwaDismissBtn) {
+  pwaDismissBtn.addEventListener("click", dismissInstallModal);
+}
+
+const pwaCloseXBtn = document.getElementById("pwa-install-close-x");
+if (pwaCloseXBtn) {
+  pwaCloseXBtn.addEventListener("click", dismissInstallModal);
+}
+
+// Initial UI check
+updateInstallUIVisibility();
+
+
+/* ---------------------------------------------------------------------
    RENDER
    --------------------------------------------------------------------- */
 
@@ -838,6 +1145,7 @@ function renderAll() {
   renderQuests();
   renderBadges();
   checkDayEndWarnings();
+  checkEveningScheduleRecommendation();
 }
 
 function renderDashboard() {
@@ -845,7 +1153,7 @@ function renderDashboard() {
   const todays = activities.filter((a) => a.date === TODAY);
   const pending = todays.filter((a) => !a.completed);
   const completed = todays.filter((a) => a.completed);
-  const historyCompleted = activities.filter((a) => a.completed && a.date !== TODAY);
+  const historyCompleted = activities.filter((a) => a.completed && a.date < TODAY);
 
   document.getElementById("stat-total-today").textContent = todays.length;
   document.getElementById("stat-pending-today").textContent = pending.length;
@@ -857,16 +1165,24 @@ function renderDashboard() {
   tbody.innerHTML = "";
   recent.forEach((a) => {
     const tr = document.createElement("tr");
+    let statusHtml = "";
+    if (a.date > TODAY) {
+      statusHtml = `<span class="status-pill status-scheduled">Scheduled</span>`;
+    } else if (a.completed) {
+      statusHtml = `<span class="status-pill status-done">Completed</span>`;
+    } else {
+      statusHtml = `<span class="status-pill status-pending">${a.date < TODAY ? "Missed" : "Pending"}</span>`;
+    }
     tr.innerHTML = `
       <td>${escapeHtml(a.title)}</td>
       <td>${a.date}</td>
-      <td><span class="status-pill ${a.completed ? "status-done" : "status-pending"}">${a.completed ? "Completed" : "Pending"}</span></td>
+      <td>${statusHtml}</td>
     `;
     tbody.appendChild(tr);
   });
 
   const weekAgo = daysAgoKey(6);
-  const weeklyCompleted = activities.filter((a) => a.completed && a.date >= weekAgo).length;
+  const weeklyCompleted = activities.filter((a) => a.completed && a.date >= weekAgo && a.date <= TODAY).length;
   const weeklySlideText = document.getElementById("slide-weekly-text");
   if (weeklySlideText) {
     weeklySlideText.textContent = `You've completed ${weeklyCompleted} task${weeklyCompleted === 1 ? "" : "s"} in the last 7 days.`;
@@ -880,11 +1196,85 @@ function renderToday() {
   const pending = todays.filter((a) => !a.completed);
   const completed = todays.filter((a) => a.completed);
 
+  // Scheduled future activities (for upcoming dates)
+  const scheduled = activities
+    .filter((a) => a.date > TODAY && matchesSearch(a))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
   fillTaskTable("#pending-table tbody", pending);
   fillTaskTable("#completed-table tbody", completed);
+  fillScheduledTable("#scheduled-table tbody", scheduled);
 
   document.getElementById("pending-empty").hidden = pending.length !== 0;
   document.getElementById("completed-empty").hidden = completed.length !== 0;
+
+  const scheduledEmpty = document.getElementById("scheduled-empty");
+  if (scheduledEmpty) scheduledEmpty.hidden = scheduled.length !== 0;
+  const scheduledCount = document.getElementById("scheduled-count");
+  if (scheduledCount) scheduledCount.textContent = scheduled.length;
+  checkEveningScheduleRecommendation();
+}
+
+function formatScheduledDate(dateStr) {
+  const TODAY = todayKey();
+  if (dateStr === TODAY) return "Today";
+  const today = new Date(TODAY + "T00:00:00");
+  const target = new Date(dateStr + "T00:00:00");
+  const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 1) return `${dateStr} (Tomorrow)`;
+  if (diffDays > 1 && diffDays <= 7) return `${dateStr} (in ${diffDays} days)`;
+  return dateStr;
+}
+
+function fillScheduledTable(selector, list) {
+  const tbody = document.querySelector(selector);
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  list.forEach((a) => {
+    const tr = document.createElement("tr");
+
+    const dateCell = document.createElement("td");
+    const dateBadge = document.createElement("span");
+    dateBadge.className = "scheduled-date-badge";
+    dateBadge.textContent = formatScheduledDate(a.date);
+    dateCell.appendChild(dateBadge);
+
+    const titleCell = document.createElement("td");
+    titleCell.textContent = a.title;
+    if (a.priority) {
+      const mark = document.createElement("span");
+      mark.className = "priority-pill";
+      mark.textContent = "Boss Challenge";
+      titleCell.appendChild(document.createTextNode(" "));
+      titleCell.appendChild(mark);
+    }
+
+    const notesCell = document.createElement("td");
+    notesCell.textContent = a.notes || "—";
+
+    const actionsCell = document.createElement("td");
+    actionsCell.className = "row-actions";
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "icon-btn";
+    editBtn.textContent = "Edit";
+    editBtn.addEventListener("click", () => openEditModal(a.id));
+
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "icon-btn danger";
+    removeBtn.textContent = "Remove";
+    removeBtn.setAttribute("aria-label", `Remove scheduled activity ${a.title}`);
+    removeBtn.addEventListener("click", () => openDeleteModal(a.id, true));
+
+    actionsCell.appendChild(editBtn);
+    actionsCell.appendChild(removeBtn);
+
+    tr.appendChild(dateCell);
+    tr.appendChild(titleCell);
+    tr.appendChild(notesCell);
+    tr.appendChild(actionsCell);
+    tbody.appendChild(tr);
+  });
 }
 
 function fillTaskTable(selector, list) {
@@ -940,7 +1330,7 @@ function fillTaskTable(selector, list) {
 
 function renderHistory() {
   const TODAY = todayKey();
-  const pastActivities = activities.filter((a) => a.date !== TODAY);
+  const pastActivities = activities.filter((a) => a.date < TODAY);
 
   const uniqueDates = [...new Set(pastActivities.map((a) => a.date))].sort((a, b) => (a < b ? 1 : -1));
   const currentFilterValue = historyDateFilter.value;
@@ -1084,7 +1474,7 @@ function questCard(item, done = false) {
     <div class="streak-progress-track">
       <div class="streak-progress-fill" style="width:${item.progress || 0}%"></div>
     </div>
-    <p class="quest-meta">${item.current}/${item.target}${done ? " · complete" : ""}</p>
+    <p class="quest-meta">${item.current}/${item.target}${done ? ` · complete (+${item.xp || 25} XP)` : ` · +${item.xp || 25} XP`}</p>
   `;
   return wrap;
 }
@@ -1102,23 +1492,393 @@ function renderBadges() {
   document.getElementById("badge-empty").hidden = badges.length !== 0;
 }
 
+/* ---------------------------------------------------------------------
+   MENTOR AUDIO SUITE (Unique Synthesized Themes per Mentor)
+   --------------------------------------------------------------------- */
+
+const MENTOR_AUDIO_THEMES = {
+  // One Piece
+  zoro: {
+    name: "Wano Steel Katana & Minor Pentatonic Fanfare",
+    bpm: 135,
+    notes: [
+      { f: 293.66, d: 0.14, t: "sawtooth", v: 0.24 }, // D4
+      { f: 349.23, d: 0.14, t: "sawtooth", v: 0.26 }, // F4
+      { f: 392.00, d: 0.14, t: "sawtooth", v: 0.28 }, // G4
+      { f: 440.00, d: 0.20, t: "sawtooth", v: 0.32 }, // A4
+      { f: 587.33, d: 0.50, t: "sawtooth", v: 0.36 }, // D5 (slashing resolve)
+    ],
+    bass: { f: 146.83, d: 0.85 }, // D3 deep katana ring
+    noiseSlash: true,
+  },
+  luffy: {
+    name: "Pirate King Joyful Brass Fanfare",
+    bpm: 155,
+    notes: [
+      { f: 261.63, d: 0.12, t: "square", v: 0.22 }, // C4
+      { f: 329.63, d: 0.12, t: "square", v: 0.24 }, // E4
+      { f: 392.00, d: 0.12, t: "square", v: 0.28 }, // G4
+      { f: 523.25, d: 0.16, t: "square", v: 0.32 }, // C5
+      { f: 659.25, d: 0.18, t: "square", v: 0.35 }, // E5
+      { f: 783.99, d: 0.55, t: "square", v: 0.38 }, // G5 (triumphant hold)
+    ],
+    bass: { f: 130.81, d: 0.9 }, // C3 brass thump
+  },
+  rayleigh: {
+    name: "Dark King Haki Orchestral Cadence",
+    bpm: 95,
+    notes: [
+      { f: 196.00, d: 0.22, t: "triangle", v: 0.24 }, // G3
+      { f: 246.94, d: 0.22, t: "triangle", v: 0.26 }, // B3
+      { f: 293.66, d: 0.22, t: "triangle", v: 0.28 }, // D4
+      { f: 392.00, d: 0.35, t: "triangle", v: 0.34 }, // G4
+      { f: 493.88, d: 0.70, t: "sine", v: 0.36 },     // B4
+    ],
+    bass: { f: 98.00, d: 1.2 }, // G2 regal sub
+  },
+  // Black Clover
+  asta: {
+    name: "Demon-Slayer Relentless Rock Power",
+    bpm: 165,
+    notes: [
+      { f: 164.81, d: 0.10, t: "sawtooth", v: 0.28 }, // E3
+      { f: 220.00, d: 0.10, t: "sawtooth", v: 0.30 }, // A3
+      { f: 246.94, d: 0.12, t: "sawtooth", v: 0.34 }, // B3
+      { f: 329.63, d: 0.18, t: "sawtooth", v: 0.38 }, // E4
+      { f: 440.00, d: 0.50, t: "sawtooth", v: 0.42 }, // A4
+    ],
+    bass: { f: 82.41, d: 0.75 }, // E2 heavy rock bottom
+  },
+  yami: {
+    name: "Dark Magic Void Strike & Stoic Power",
+    bpm: 110,
+    notes: [
+      { f: 123.47, d: 0.26, t: "sawtooth", v: 0.30 }, // B2
+      { f: 185.00, d: 0.20, t: "sawtooth", v: 0.32 }, // F#3
+      { f: 246.94, d: 0.24, t: "sawtooth", v: 0.35 }, // B3
+      { f: 370.00, d: 0.60, t: "triangle", v: 0.38 }, // F#4
+    ],
+    bass: { f: 61.74, d: 1.3 }, // B1 dark abyss
+    noiseSlash: true,
+  },
+  // Bleach
+  urahara: {
+    name: "Benihime Playful Bamboo & Windchime",
+    bpm: 135,
+    notes: [
+      { f: 329.63, d: 0.12, t: "sine", v: 0.22 }, // E4
+      { f: 392.00, d: 0.12, t: "sine", v: 0.24 }, // G4
+      { f: 493.88, d: 0.12, t: "triangle", v: 0.26 }, // B4
+      { f: 587.33, d: 0.16, t: "triangle", v: 0.30 }, // D5
+      { f: 659.25, d: 0.45, t: "sine", v: 0.34 }, // E5
+    ],
+    bass: { f: 164.81, d: 0.6 },
+  },
+  ichigo: {
+    name: "Bankai Heroic Electric Hook",
+    bpm: 160,
+    notes: [
+      { f: 293.66, d: 0.10, t: "sawtooth", v: 0.28 }, // D4
+      { f: 349.23, d: 0.10, t: "sawtooth", v: 0.30 }, // F4
+      { f: 440.00, d: 0.12, t: "sawtooth", v: 0.34 }, // A4
+      { f: 523.25, d: 0.15, t: "sawtooth", v: 0.38 }, // C5
+      { f: 587.33, d: 0.50, t: "sawtooth", v: 0.42 }, // D5
+    ],
+    bass: { f: 73.42, d: 0.85 }, // D2 rock pulse
+  },
+  aizen: {
+    name: "Kyoka Suigetsu Regal Cathedral Organ",
+    bpm: 88,
+    notes: [
+      { f: 277.18, d: 0.28, t: "sine", v: 0.26 }, // C#4
+      { f: 329.63, d: 0.28, t: "triangle", v: 0.28 }, // E4
+      { f: 415.30, d: 0.28, t: "sine", v: 0.32 }, // G#4
+      { f: 554.37, d: 0.70, t: "sine", v: 0.38 }, // C#5
+    ],
+    bass: { f: 69.30, d: 1.4 }, // C#2 cathedral pedal
+  },
+  // Naruto
+  naruto: {
+    name: "Konoha Shinobue Flute & Victory Taiko",
+    bpm: 145,
+    notes: [
+      { f: 293.66, d: 0.12, t: "sine", v: 0.24 }, // D4
+      { f: 392.00, d: 0.12, t: "sine", v: 0.26 }, // G4
+      { f: 440.00, d: 0.12, t: "triangle", v: 0.28 }, // A4
+      { f: 493.88, d: 0.16, t: "sine", v: 0.32 }, // B4
+      { f: 587.33, d: 0.20, t: "sine", v: 0.36 }, // D5
+      { f: 659.25, d: 0.50, t: "sine", v: 0.40 }, // E5
+    ],
+    bass: { f: 146.83, d: 0.8 }, // Taiko drum punch
+  },
+  kakashi: {
+    name: "Chidori Spark & Master Calm Chime",
+    bpm: 130,
+    notes: [
+      { f: 440.00, d: 0.14, t: "sine", v: 0.24 }, // A4
+      { f: 554.37, d: 0.14, t: "sine", v: 0.28 }, // C#5
+      { f: 659.25, d: 0.18, t: "triangle", v: 0.32 }, // E5
+      { f: 880.00, d: 0.48, t: "sine", v: 0.36 }, // A5
+    ],
+    bass: { f: 220.00, d: 0.7 },
+    noiseSlash: true,
+  },
+  guy: {
+    name: "Eight Gates Burning Youth Trumpet",
+    bpm: 170,
+    notes: [
+      { f: 349.23, d: 0.10, t: "sawtooth", v: 0.26 }, // F4
+      { f: 440.00, d: 0.10, t: "sawtooth", v: 0.28 }, // A4
+      { f: 523.25, d: 0.10, t: "sawtooth", v: 0.32 }, // C5
+      { f: 698.46, d: 0.22, t: "sawtooth", v: 0.38 }, // F5
+      { f: 880.00, d: 0.55, t: "sawtooth", v: 0.44 }, // A5
+    ],
+    bass: { f: 174.61, d: 0.8 },
+  },
+  "might-guy": {
+    name: "Eight Gates Burning Youth Trumpet",
+    bpm: 170,
+    notes: [
+      { f: 349.23, d: 0.10, t: "sawtooth", v: 0.26 },
+      { f: 440.00, d: 0.10, t: "sawtooth", v: 0.28 },
+      { f: 523.25, d: 0.10, t: "sawtooth", v: 0.32 },
+      { f: 698.46, d: 0.22, t: "sawtooth", v: 0.38 },
+      { f: 880.00, d: 0.55, t: "sawtooth", v: 0.44 },
+    ],
+    bass: { f: 174.61, d: 0.8 },
+  },
+};
+
+function playMentorAchievementTheme(mentorKey, eventType = "achievement") {
+  if (isAudioMuted) return;
+
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+
+    const normalizedKey = (mentorKey || (progress && progress.mentor) || pendingMentor || "zoro").toLowerCase().trim();
+    const theme = MENTOR_AUDIO_THEMES[normalizedKey] || MENTOR_AUDIO_THEMES.zoro;
+
+    // Show animated music equalizer in the speech bubble
+    const musicIndicator = document.getElementById("bubble-music-indicator");
+    if (musicIndicator) {
+      musicIndicator.hidden = false;
+      if (musicPlayingTimer) clearTimeout(musicPlayingTimer);
+      musicPlayingTimer = setTimeout(() => {
+        if (musicIndicator) musicIndicator.hidden = true;
+      }, 2500);
+    }
+
+    const now = ctx.currentTime;
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0.32, now);
+    masterGain.connect(ctx.destination);
+
+    // 1. Noise attack / sword slash / chidori sizzle if configured
+    if (theme.noiseSlash) {
+      const bufferSize = Math.floor(ctx.sampleRate * 0.16);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.04));
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = normalizedKey === "kakashi" ? "bandpass" : "highpass";
+      filter.frequency.setValueAtTime(normalizedKey === "kakashi" ? 3200 : 1800, now);
+      filter.Q.setValueAtTime(3.0, now);
+
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.24, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(masterGain);
+
+      noise.start(now);
+      noise.stop(now + 0.18);
+    }
+
+    // 2. Bass foundation
+    if (theme.bass) {
+      const bassOsc = ctx.createOscillator();
+      const bassGain = ctx.createGain();
+      bassOsc.type = normalizedKey === "asta" || normalizedKey === "yami" ? "sawtooth" : "triangle";
+      bassOsc.frequency.setValueAtTime(theme.bass.f, now);
+
+      const bassFilter = ctx.createBiquadFilter();
+      bassFilter.type = "lowpass";
+      bassFilter.frequency.setValueAtTime(450, now);
+
+      bassGain.gain.setValueAtTime(0.22, now);
+      bassGain.gain.exponentialRampToValueAtTime(0.001, now + theme.bass.d);
+
+      bassOsc.connect(bassFilter);
+      bassFilter.connect(bassGain);
+      bassGain.connect(masterGain);
+
+      bassOsc.start(now);
+      bassOsc.stop(now + theme.bass.d + 0.05);
+    }
+
+    // 3. Melodic note progression
+    let noteTime = now + (theme.noiseSlash ? 0.06 : 0.02);
+    const tempoScale = 60 / (theme.bpm || 120);
+
+    theme.notes.forEach((note, idx) => {
+      const osc = ctx.createOscillator();
+      const noteGain = ctx.createGain();
+      const duration = (note.d || 0.16) * tempoScale * 1.8;
+
+      osc.type = note.t || "sine";
+      osc.frequency.setValueAtTime(note.f, noteTime);
+
+      // Add a subtle vibrato on held final note
+      if (idx === theme.notes.length - 1 && duration > 0.3) {
+        const lfo = ctx.createOscillator();
+        const lfoGain = ctx.createGain();
+        lfo.frequency.setValueAtTime(5.5, noteTime);
+        lfoGain.gain.setValueAtTime(3.5, noteTime);
+        lfo.connect(osc.frequency);
+        lfo.start(noteTime);
+        lfo.stop(noteTime + duration);
+      }
+
+      // Attack & decay envelope
+      const vol = note.v || 0.25;
+      noteGain.gain.setValueAtTime(0.001, noteTime);
+      noteGain.gain.linearRampToValueAtTime(vol, noteTime + 0.03);
+      noteGain.gain.exponentialRampToValueAtTime(0.001, noteTime + duration);
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(osc.type === "sawtooth" ? 2400 : 4000, noteTime);
+
+      osc.connect(filter);
+      filter.connect(noteGain);
+      noteGain.connect(masterGain);
+
+      osc.start(noteTime);
+      osc.stop(noteTime + duration + 0.02);
+
+      noteTime += duration * 0.82;
+    });
+  } catch (err) {
+    console.warn("Web Audio playback failed:", err);
+  }
+}
+
+function playMentorChime(mentorKey) {
+  if (isAudioMuted) return;
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const normalizedKey = (mentorKey || (progress && progress.mentor) || pendingMentor || "zoro").toLowerCase().trim();
+    const theme = MENTOR_AUDIO_THEMES[normalizedKey] || MENTOR_AUDIO_THEMES.zoro;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const firstNote = theme.notes && theme.notes[0] ? theme.notes[0].f : 587.33;
+    const resolveNote = theme.notes && theme.notes[theme.notes.length - 1] ? theme.notes[theme.notes.length - 1].f : 880;
+
+    osc.type = (theme.notes && theme.notes[0] && theme.notes[0].t) || "sine";
+    osc.frequency.setValueAtTime(firstNote, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(resolveNote, ctx.currentTime + 0.14);
+
+    gain.gain.setValueAtTime(0.14, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  } catch (_) {}
+}
+
 function applyMentorFeedback(state, suppressToast = false) {
   if (!state) return;
+  const isAchievement = state.is_achievement || state.rank_up || state.level_up || (state.completed_quest_count > 0 && state.mentor_event === "quest_completed") || state.all_completed;
+
   if (state.mentor_text) {
     document.getElementById("mentor-text").textContent = state.mentor_text;
     const key = `${state.mentor_event || ""}:${state.mentor_text}`;
     if (!suppressToast && key !== lastMentorKey) {
       lastMentorKey = key;
-      showToast(state.mentor_text, "good");
-      showMentorSpeechBubble(state.mentor_text, 6);
+      if (isAchievement) {
+        handleAchievementCelebration(state, state.achievement_type || state.mentor_event);
+      } else {
+        showToast(state.mentor_text, "good");
+        showMentorSpeechBubble(state.mentor_text, 6, {
+          isAchievement: false,
+          category: "🥋 Real Advice",
+        });
+      }
     } else if (key !== lastMentorKey) {
       lastMentorKey = key;
-      showMentorSpeechBubble(state.mentor_text, 4);
+      showMentorSpeechBubble(state.mentor_text, 4, {
+        isAchievement: false,
+        category: "🥋 Real Advice",
+      });
     }
   }
   if (state.rank && lastRank && state.rank !== lastRank) showRankUp(state.rank);
   if (state.rank_up && state.rank) showRankUp(state.rank);
   if (state.rank) lastRank = state.rank;
+}
+
+function handleAchievementCelebration(state, eventType = "activity_complete") {
+  const currentMentor = (state && state.mentor) || (progress && progress.mentor) || pendingMentor || "zoro";
+
+  let categoryLabel = "🏆 Achievement";
+  let achievementText = (state && state.mentor_text) || "";
+
+  if (state && state.rank_up) {
+    categoryLabel = "👑 Rank Up Honor";
+    achievementText = (mentorAchievementQuotes && mentorAchievementQuotes.rank_up) || achievementText;
+  } else if (state && state.level_up) {
+    categoryLabel = "✨ Level Up Victory";
+    achievementText = (mentorAchievementQuotes && mentorAchievementQuotes.level_up) || achievementText;
+  } else if (state && (state.all_completed || eventType === "all_completed")) {
+    categoryLabel = "⚔️ Daily Tasks Cleared";
+    achievementText = (mentorAchievementQuotes && mentorAchievementQuotes.all_completed) || achievementText;
+  } else if (eventType === "quest_completed") {
+    categoryLabel = "📜 Quest Triumph";
+    achievementText = (mentorAchievementQuotes && mentorAchievementQuotes.quest_completed) || achievementText;
+  } else if (eventType === "badge_earned") {
+    categoryLabel = "🎖️ Badge Conferred";
+    achievementText = (mentorAchievementQuotes && mentorAchievementQuotes.badge_earned) || achievementText;
+  } else {
+    categoryLabel = "🏆 Task Mastered";
+    if (!achievementText && mentorAchievementQuotes && mentorAchievementQuotes.activity_completed) {
+      achievementText = mentorAchievementQuotes.activity_completed;
+    }
+  }
+
+  if (!achievementText) {
+    achievementText = (state && state.mentor_text) || "Well executed cut. Keep pressing forward!";
+  }
+
+  currentAchievementText = achievementText;
+  currentAchievementCategory = categoryLabel;
+  isBubbleInAchievementMode = true;
+
+  // Play mentor-specific background achievement fanfare / music
+  playMentorAchievementTheme(currentMentor, eventType);
+
+  // Update speech bubble UI
+  showMentorSpeechBubble(achievementText, 10, {
+    isAchievement: true,
+    category: categoryLabel,
+  });
+
+  if (document.getElementById("mentor-text")) {
+    document.getElementById("mentor-text").textContent = achievementText;
+  }
 }
 
 function showRankUp(rank) {
@@ -1132,25 +1892,6 @@ function showRankUp(rank) {
 /* ---------------------------------------------------------------------
    MENTOR INTERACTIVE WIDGET & SPEECH BUBBLE
    --------------------------------------------------------------------- */
-
-function playMentorChime() {
-  try {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
-    gain.gain.setValueAtTime(0.12, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.32);
-  } catch (_) {}
-}
 
 function updateMentorWidget() {
   const widget = document.getElementById("mentor-floating-widget");
@@ -1226,12 +1967,41 @@ function updateMentorWidget() {
   }
 }
 
-function showMentorSpeechBubble(text, autoCloseSec = 0) {
+function updateSoundButtonUI() {
+  const soundBtn = document.getElementById("bubble-sound-toggle");
+  if (!soundBtn) return;
+  soundBtn.textContent = isAudioMuted ? "🔇" : "🔊";
+  soundBtn.title = isAudioMuted ? "Unmute Mentor Audio" : "Mute Mentor Audio";
+}
+
+function showMentorSpeechBubble(text, autoCloseSec = 0, options = {}) {
   const bubble = document.getElementById("mentor-speech-bubble");
   const textEl = document.getElementById("bubble-mentor-text");
+  const badgeEl = document.getElementById("bubble-category-badge");
+  const replayBtn = document.getElementById("bubble-replay-btn");
+  const toggleModeBtn = document.getElementById("bubble-toggle-mode-btn");
   if (!bubble || !textEl) return;
+
   if (text) textEl.textContent = text;
   bubble.hidden = false;
+
+  const isAchieve = options.isAchievement === true;
+  bubble.classList.toggle("achievement-mode", isAchieve);
+
+  if (badgeEl) {
+    badgeEl.textContent = options.category || (isAchieve ? "🏆 Achievement" : "🥋 Real Advice");
+  }
+
+  if (replayBtn) {
+    replayBtn.hidden = !isAchieve && !currentAchievementText;
+  }
+
+  if (toggleModeBtn) {
+    toggleModeBtn.hidden = !currentAchievementText;
+    toggleModeBtn.textContent = isAchieve ? "🥋 Real Advice" : "🏆 View Achievement";
+  }
+
+  updateSoundButtonUI();
 
   if (speechBubbleTimer) clearTimeout(speechBubbleTimer);
   if (autoCloseSec > 0) {
@@ -1260,23 +2030,41 @@ function interactMentorFigure() {
   if (bubble && !bubble.hidden) {
     nextMentorQuote();
   } else {
-    const currentText = document.getElementById("mentor-text")?.textContent || "";
-    if (mentorQuotes.length > 0) {
-      showMentorSpeechBubble(mentorQuotes[currentQuoteIndex % mentorQuotes.length]);
+    const list = mentorRealAdvises.length > 0 ? mentorRealAdvises : mentorQuotes;
+    if (list.length > 0) {
+      const text = list[currentAdviceIndex % list.length];
+      showMentorSpeechBubble(text, 8, {
+        isAchievement: false,
+        category: `🥋 Real Advice (${(currentAdviceIndex % list.length) + 1}/${list.length})`,
+      });
     } else {
-      showMentorSpeechBubble(currentText || "Let's make today's work count.");
+      const currentText = document.getElementById("mentor-text")?.textContent || "Let's make today's work count.";
+      showMentorSpeechBubble(currentText, 6, {
+        isAchievement: false,
+        category: "🥋 Real Advice",
+      });
     }
   }
 }
 
 function nextMentorQuote() {
   playMentorChime();
-  if (mentorQuotes.length > 0) {
-    currentQuoteIndex = (currentQuoteIndex + 1) % mentorQuotes.length;
-    showMentorSpeechBubble(mentorQuotes[currentQuoteIndex]);
+  isBubbleInAchievementMode = false;
+  const list = mentorRealAdvises.length > 0 ? mentorRealAdvises : mentorQuotes;
+  if (list.length > 0) {
+    currentAdviceIndex = (currentAdviceIndex + 1) % list.length;
+    currentQuoteIndex = currentAdviceIndex;
+    const text = list[currentAdviceIndex];
+    showMentorSpeechBubble(text, 8, {
+      isAchievement: false,
+      category: `🥋 Real Advice (${currentAdviceIndex + 1}/${list.length})`,
+    });
   } else {
     const currentText = document.getElementById("mentor-text")?.textContent || "Stay focused on today's goals.";
-    showMentorSpeechBubble(currentText);
+    showMentorSpeechBubble(currentText, 6, {
+      isAchievement: false,
+      category: "🥋 Real Advice",
+    });
   }
 }
 
@@ -1468,6 +2256,54 @@ if (bubbleCloseBtn) {
   });
 }
 
+const bubbleSoundToggle = document.getElementById("bubble-sound-toggle");
+if (bubbleSoundToggle) {
+  bubbleSoundToggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    isAudioMuted = !isAudioMuted;
+    setStored("daybook_audio_muted", isAudioMuted ? "true" : "false");
+    updateSoundButtonUI();
+    showToast(isAudioMuted ? "🔇 Mentor audio muted" : "🔊 Mentor audio active", "good");
+    if (!isAudioMuted) {
+      playMentorChime();
+    }
+  });
+}
+
+const bubbleReplayBtn = document.getElementById("bubble-replay-btn");
+if (bubbleReplayBtn) {
+  bubbleReplayBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const currentMentor = (progress && progress.mentor) || pendingMentor || "zoro";
+    playMentorAchievementTheme(currentMentor, "replay");
+    showToast("🎵 Playing Mentor Victory Theme", "good");
+  });
+}
+
+const bubbleToggleModeBtn = document.getElementById("bubble-toggle-mode-btn");
+if (bubbleToggleModeBtn) {
+  bubbleToggleModeBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (isBubbleInAchievementMode) {
+      // Switch from achievement to mentor's real advice
+      isBubbleInAchievementMode = false;
+      const list = mentorRealAdvises.length > 0 ? mentorRealAdvises : mentorQuotes;
+      const advice = list[currentAdviceIndex % Math.max(1, list.length)] || "Stay consistent with your daily disciplines.";
+      showMentorSpeechBubble(advice, 10, {
+        isAchievement: false,
+        category: `🥋 Real Advice (${(currentAdviceIndex % Math.max(1, list.length)) + 1}/${list.length || 1})`,
+      });
+    } else {
+      // Switch back to achievement appreciation
+      isBubbleInAchievementMode = true;
+      showMentorSpeechBubble(currentAchievementText || "Achievement recorded! Keep pressing forward.", 10, {
+        isAchievement: true,
+        category: currentAchievementCategory || "🏆 Achievement",
+      });
+    }
+  });
+}
+
 /* ---------------------------------------------------------------------
    BOOT SEQUENCE & SESSION RESTORATION
    --------------------------------------------------------------------- */
@@ -1520,9 +2356,13 @@ if (pendingTheme && pendingMentor) {
     renderAll();
     initSlideshow();
 
-    // Start background countdown ticker for day-end reminders
-    setInterval(checkDayEndWarnings, 30000);
+    // Start background countdown ticker for day-end reminders and mentor recommendations
+    setInterval(() => {
+      checkDayEndWarnings();
+      checkEveningScheduleRecommendation();
+    }, 30000);
     checkDayEndWarnings();
+    checkEveningScheduleRecommendation();
   } catch (_) {
     showLogin();
   }

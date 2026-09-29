@@ -461,12 +461,28 @@ h1, h2, h3, .brand, .btn-primary, .btn-secondary, .btn-danger,
 }
 
 .sidebar-brand {
-  padding: 0 22px 20px;
+  padding: 0 20px 20px;
   border-bottom: 2px solid rgba(255,255,255,0.14);
   margin-bottom: 18px;
 }
-.sidebar-brand .brand { color: var(--primary-text); font-size: 22px; opacity: 0.95; }
-.brand-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin: 5px 0 0; letter-spacing: 0.04em; }
+.brand-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sidebar-brand-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+  object-fit: cover;
+}
+.sidebar-brand .brand { color: var(--primary-text); font-size: 20px; opacity: 0.95; margin: 0; }
+.brand-x { color: #3b82f6; font-weight: 900; }
+.brand-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin: 3px 0 0; letter-spacing: 0.04em; }
 
 .nav-menu {
   display: flex;
@@ -883,6 +899,39 @@ h1, h2, h3, .brand, .btn-primary, .btn-secondary, .btn-danger,
 }
 .status-pending { background: var(--accent-bad-bg); color: var(--accent-bad); }
 .status-done { background: var(--accent-good-bg); color: var(--accent-good); }
+.status-scheduled {
+  background: rgba(255, 215, 0, 0.15);
+  color: var(--gold);
+  border-color: rgba(255, 215, 0, 0.4);
+}
+
+.scheduled-date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  background: rgba(255, 215, 0, 0.12);
+  border: 1.5px solid var(--gold);
+  padding: 3px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.badge-count {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
 
 .row-title-done { text-decoration: line-through; opacity: 0.55; }
 
@@ -942,6 +991,46 @@ h1, h2, h3, .brand, .btn-primary, .btn-secondary, .btn-danger,
   color: var(--text);
 }
 .form-row input:focus { box-shadow: 3px 3px 0 var(--shadow-color); transform: translate(-1px,-1px); }
+
+.form-row-schedule {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid var(--border-soft);
+  border-radius: calc(var(--radius) - 6px);
+}
+.schedule-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.schedule-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.schedule-input-group input[type="date"] {
+  min-width: 160px;
+  padding: 8px 10px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  font-size: 13.5px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+}
+.schedule-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+}
 .form-actions { display: flex; gap: 10px; }
 
 .filter-area { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
@@ -1193,8 +1282,8 @@ h1, h2, h3, .brand, .btn-primary, .btn-secondary, .btn-danger,
 
 .mentor-speech-bubble {
   position: relative;
-  width: 290px;
-  max-width: calc(100vw - 40px);
+  width: 320px;
+  max-width: calc(100vw - 32px);
   background: var(--surface);
   border: 3px solid var(--border);
   border-radius: var(--radius);
@@ -1204,15 +1293,37 @@ h1, h2, h3, .brand, .btn-primary, .btn-secondary, .btn-danger,
   margin-right: 12px;
   pointer-events: auto;
   animation: bubblePop 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+
+/* Achievement celebration mode styling */
+.mentor-speech-bubble.achievement-mode {
+  border-color: #f59e0b;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.4), 5px 5px 0 var(--shadow-color);
+  animation: bubbleAchievementPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes bubbleAchievementPop {
+  0% { transform: scale(0.85) translateY(12px); opacity: 0; }
+  60% { transform: scale(1.04) translateY(-3px); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 .speech-bubble-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   margin-bottom: 8px;
   border-bottom: 1px dashed var(--border-soft);
   padding-bottom: 6px;
+}
+
+.bubble-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .bubble-mentor-name {
@@ -1222,6 +1333,96 @@ h1, h2, h3, .brand, .btn-primary, .btn-secondary, .btn-danger,
   letter-spacing: 0.06em;
   color: var(--primary);
   text-transform: uppercase;
+}
+
+.bubble-category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.mentor-speech-bubble.achievement-mode .bubble-category-badge {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+body.theme-dark .mentor-speech-bubble.achievement-mode .bubble-category-badge {
+  background: #78350f;
+  color: #fef3c7;
+  border-color: #d97706;
+}
+
+.bubble-music-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #f59e0b;
+}
+
+.eq-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+
+.eq-bars span {
+  display: inline-block;
+  width: 2px;
+  background: #f59e0b;
+  border-radius: 1px;
+}
+
+.eq-bars .bar-1 {
+  height: 6px;
+  animation: eqPulse 0.6s ease-in-out infinite alternate;
+}
+.eq-bars .bar-2 {
+  height: 12px;
+  animation: eqPulse 0.45s ease-in-out infinite alternate 0.15s;
+}
+.eq-bars .bar-3 {
+  height: 8px;
+  animation: eqPulse 0.55s ease-in-out infinite alternate 0.3s;
+}
+
+@keyframes eqPulse {
+  0% { height: 3px; }
+  100% { height: 12px; }
+}
+
+.bubble-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bubble-sound-btn {
+  background: transparent;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1;
+  padding: 3px 5px;
+  cursor: pointer;
+  color: var(--text);
+  transition: all 0.15s ease;
+}
+.bubble-sound-btn:hover {
+  background: var(--surface-muted);
+  border-color: var(--primary);
 }
 
 .bubble-close {
@@ -1240,16 +1441,44 @@ h1, h2, h3, .brand, .btn-primary, .btn-secondary, .btn-danger,
 }
 
 .bubble-mentor-text {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   font-size: 13px;
   line-height: 1.45;
   color: var(--text);
   font-style: italic;
+  min-height: 38px;
+}
+
+.mentor-speech-bubble.achievement-mode .bubble-mentor-text {
+  font-weight: 600;
+  color: var(--text);
 }
 
 .bubble-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bubble-replay-btn,
+.bubble-toggle-mode-btn {
+  background: var(--surface-muted);
+  color: var(--text);
+  border: 1.5px solid var(--border-soft);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.bubble-replay-btn:hover,
+.bubble-toggle-mode-btn:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .bubble-next-btn {
@@ -1696,5 +1925,362 @@ h1, h2, h3, .brand, .btn-primary, .btn-secondary, .btn-danger,
     justify-content: flex-start;
   }
 }
+
+/* ==========================================================================
+   MENTOR EVENING SCHEDULE RECOMMENDATION BANNER
+   ========================================================================== */
+
+.evening-schedule-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 var(--shadow-color);
+  animation: bannerSlideIn 0.3s ease-out;
+}
+
+.evening-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.evening-banner-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.evening-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.evening-banner-text h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.evening-banner-text p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.evening-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 680px) {
+  .evening-schedule-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .evening-banner-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* ==========================================================================
+   PWA INSTALLATION: HEADER BUTTON & POPUP ALERT NOTIFICATION
+   ========================================================================== */
+
+.btn-install-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--shadow-color);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-install-header:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--shadow-color);
+  background: var(--bg);
+}
+
+.btn-install-header:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--shadow-color);
+}
+
+.install-header-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Modal Backdrop */
+.pwa-install-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+  animation: fadeInModal 0.25s ease-out;
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Install Card */
+.pwa-install-card {
+  position: relative;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 6px 6px 0 var(--shadow-color);
+  max-width: 440px;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: popInCard 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popInCard {
+  from {
+    transform: scale(0.92) translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.pwa-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.pwa-modal-close:hover {
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.pwa-install-badge-row {
+  display: flex;
+  align-items: center;
+}
+
+.pwa-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.25);
+}
+
+.pwa-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2563eb;
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.pwa-install-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pwa-icon-container {
+  width: 68px;
+  height: 68px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 2px solid var(--border);
+  box-shadow: 3px 3px 0 var(--shadow-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.pwa-app-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pwa-header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pwa-header-titles h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.pwa-header-tagline {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.pwa-install-desc {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.pwa-perks-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+}
+
+.pwa-perk-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.pwa-perk-icon {
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.pwa-perk-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pwa-perk-item strong {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.pwa-perk-item span {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.pwa-ios-instructions {
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.ios-instruct-title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ios-instruct-steps {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.ios-icon-share,
+.ios-icon-add {
+  display: inline-block;
+  padding: 0 4px;
+  font-weight: bold;
+  color: #2563eb;
+}
+
+.pwa-install-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.pwa-btn-install {
+  flex: 1;
+  padding: 10px 18px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.pwa-btn-dismiss {
+  padding: 10px 16px;
+  font-size: 13px;
+}
+
+
 
 

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="blueGradM" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+  </defs>
+
+  <!-- Full bleed background -->
+  <rect width="512" height="512" fill="#ffffff" />
+
+  <!-- Scaled down 62% inside safe zone -->
+  <g transform="translate(100, 115) scale(0.60)">
+    <!-- Radiating Energy Sparks above Book -->
+    <g fill="#2563eb">
+      <rect x="250" y="70" width="12" height="34" rx="6" />
+      <rect x="200" y="86" width="12" height="30" rx="6" transform="rotate(-30 206 101)" />
+      <rect x="300" y="86" width="12" height="30" rx="6" transform="rotate(30 306 101)" />
+    </g>
+
+    <!-- Book Backing Outline -->
+    <path d="M 40 40 
+             Q 150 10 255 70 
+             Q 360 10 470 40 
+             L 485 360 
+             Q 365 330 255 385 
+             Q 145 330 25 360 
+             Z" 
+          fill="#0f172a" />
+
+    <!-- Open Spine Valley Accent -->
+    <path d="M 255 70 L 255 385" stroke="#ffffff" stroke-width="14" stroke-linecap="round" />
+
+    <!-- Left Page Interior -->
+    <g fill="#ffffff">
+      <circle cx="95" cy="140" r="16" />
+      <rect x="130" y="128" width="85" height="24" rx="12" />
+      <circle cx="95" cy="205" r="16" />
+      <rect x="130" y="193" width="85" height="24" rx="12" />
+      <circle cx="95" cy="270" r="16" />
+      <rect x="130" y="258" width="85" height="24" rx="12" />
+    </g>
+
+    <!-- Right Page: Blue 'X' with Upward Arrow -->
+    <g>
+      <path d="M 300 120 L 420 305" stroke="url(#blueGradM)" stroke-width="42" stroke-linecap="round" />
+      <path d="M 300 305 L 425 120" stroke="url(#blueGradM)" stroke-width="42" stroke-linecap="round" />
+      <path d="M 380 102 L 450 102 L 450 172 Z" fill="url(#blueGradM)" />
+    </g>
+  </g>
+</svg>

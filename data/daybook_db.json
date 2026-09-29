@@ -655,6 +655,66 @@
       "streakCached": 0,
       "mentorEvent": "status",
       "mentorText": "Your logbook is blank today. Add your first cut and let's get moving."
+    },
+    "16": {
+      "userId": 16,
+      "xp": 0,
+      "level": 1,
+      "theme": "onepiece",
+      "mentor": "zoro",
+      "streakCached": 0,
+      "mentorEvent": "status",
+      "mentorText": "Your logbook is blank today. Add your first cut and let's get moving."
+    },
+    "31": {
+      "userId": 31,
+      "xp": 0,
+      "level": 1,
+      "theme": "onepiece",
+      "mentor": "zoro",
+      "streakCached": 0,
+      "mentorEvent": "status",
+      "mentorText": "Your logbook is blank today. Add your first cut and let's get moving."
+    },
+    "33": {
+      "userId": 33,
+      "xp": 0,
+      "level": 1,
+      "theme": null,
+      "mentor": null,
+      "streakCached": 0,
+      "mentorEvent": null,
+      "mentorText": null
+    },
+    "34": {
+      "userId": 34,
+      "xp": 78,
+      "level": 2,
+      "theme": "onepiece",
+      "mentor": "zoro",
+      "streakCached": 1,
+      "mentorEvent": "quest_assigned",
+      "mentorText": "You've got 1 tasks in front of you. Stop staring and make the first strike."
+    },
+    "39": {
+      "userId": 39,
+      "xp": 150,
+      "level": 2,
+      "theme": "onepiece",
+      "mentor": "zoro",
+      "streakCached": 2,
+      "mentorEvent": "level_up",
+      "mentorText": "Well done."
+    },
+    "41": {
+      "userId": 41,
+      "xp": 50,
+      "level": 1,
+      "theme": "onepiece",
+      "mentor": "zoro",
+      "streakCached": 0,
+      "mentorEvent": "status",
+      "mentorText": "Your logbook is blank today. Add your first cut and let's get moving."
     }
   },
   "nextUserId": 8,

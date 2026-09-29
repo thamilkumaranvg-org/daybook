@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/((?!assets/|frontend/|style\\.css|script\\.js|sw\\.js|manifest\\.json).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

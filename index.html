@@ -4,7 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Daybook</title>
-  <meta name="description" content="Activity management system with themes, anime mentor guides, streaks, and quests." />
+  <meta name="description" content="Installable activity management system with themes, anime mentor guides, streaks, and quests." />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Daybook" />
+
+  <!-- PWA Manifest & App Icons -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="/assets/icons/icon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=Pirata+One&family=Cormorant+Garamond:wght@600;700&family=Oswald:wght@500;600;700&family=Bangers&family=Nunito:wght@500;700&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=2" />
@@ -114,8 +127,13 @@
 
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-brand">
-        <p class="brand">Daybook</p>
-        <p class="brand-sub" id="brand-sub">Activity Manager</p>
+        <div class="brand-with-icon">
+          <img src="/assets/icons/icon-192.png" alt="Daybook App Icon" class="sidebar-brand-icon" />
+          <div>
+            <p class="brand">Daybook<span class="brand-x">X</span></p>
+            <p class="brand-sub" id="brand-sub">Activity Manager</p>
+          </div>
+        </div>
       </div>
 
       <nav class="nav-menu">
@@ -178,6 +196,12 @@
         </div>
 
         <div class="header-right">
+          <!-- PWA Install Quick Action in Header -->
+          <button id="header-install-btn" class="btn-install-header" type="button" title="Install Daybook as Desktop or Mobile App" hidden>
+            <span class="install-header-icon">📲</span>
+            <span class="install-header-text">Install App</span>
+          </button>
+
           <div class="search-area">
             <input type="text" id="search-input" placeholder="Search activities..." />
           </div>
@@ -315,6 +339,21 @@
       <section id="page-today" class="page">
         <p class="page-subtitle">Log new activities and manage what's pending or done today.</p>
 
+        <!-- Mentor Evening Recommendation Banner (shown before nightfall to schedule tomorrow's activities) -->
+        <div id="evening-schedule-banner" class="evening-schedule-banner" hidden>
+          <div class="evening-banner-content">
+            <span class="evening-banner-icon">🌅</span>
+            <div class="evening-banner-text">
+              <h4 id="evening-schedule-title">Mentor Evening Recommendation</h4>
+              <p id="evening-schedule-msg">Before night arrives, take a moment to schedule your activities for tomorrow to keep your momentum strong.</p>
+            </div>
+          </div>
+          <div class="evening-banner-actions">
+            <button id="evening-schedule-btn" class="btn-primary btn-sm">Schedule for Tomorrow</button>
+            <button id="evening-dismiss-btn" class="btn-secondary btn-sm" aria-label="Dismiss reminder">Dismiss</button>
+          </div>
+        </div>
+
         <div class="action-row">
           <button id="add-activity-btn" class="btn-primary">+ New Activity</button>
         </div>
@@ -323,6 +362,13 @@
           <div class="form-row">
             <input type="text" id="logger-title" placeholder="Activity title" required />
             <input type="text" id="logger-notes" placeholder="Notes (optional)" />
+          </div>
+          <div class="form-row-schedule">
+            <div class="schedule-input-group">
+              <label for="logger-date" class="schedule-label">Scheduled Date</label>
+              <input type="date" id="logger-date" />
+            </div>
+            <p class="schedule-hint">Defaults to today. Pick a future date to schedule ahead.</p>
           </div>
           <label class="priority-line">
             <input type="checkbox" id="logger-priority" />
@@ -369,6 +415,24 @@
           </table>
           <p class="empty-state" id="completed-empty" hidden>No activities completed yet today.</p>
         </div>
+
+        <div class="panel" id="scheduled-panel">
+          <div class="panel-header">
+            <h3>Scheduled Activities <span class="badge-count" id="scheduled-count">0</span></h3>
+          </div>
+          <table class="data-table" id="scheduled-table">
+            <thead>
+              <tr>
+                <th>Scheduled Date</th>
+                <th>Title</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p class="empty-state" id="scheduled-empty" hidden>No activities scheduled for future dates. Pick a future date when adding an activity to schedule ahead.</p>
+        </div>
       </section>
 
       <section id="page-history" class="page">
@@ -410,6 +474,8 @@
         <input type="text" id="edit-title" required />
         <label for="edit-notes">Notes</label>
         <input type="text" id="edit-notes" />
+        <label for="edit-date">Scheduled Date</label>
+        <input type="date" id="edit-date" required />
         <label class="priority-line">
           <input type="checkbox" id="edit-priority" />
           High priority (Boss Challenge)
@@ -445,11 +511,23 @@
   <div id="mentor-floating-widget" class="mentor-floating-widget" hidden>
     <div id="mentor-speech-bubble" class="mentor-speech-bubble" hidden>
       <div class="speech-bubble-header">
-        <span id="bubble-mentor-name" class="bubble-mentor-name">MENTOR</span>
-        <button type="button" id="bubble-close-btn" class="bubble-close" aria-label="Close speech bubble">×</button>
+        <div class="bubble-header-left">
+          <span id="bubble-mentor-name" class="bubble-mentor-name">MENTOR</span>
+          <span id="bubble-category-badge" class="bubble-category-badge">🥋 Real Advice</span>
+          <span id="bubble-music-indicator" class="bubble-music-indicator" hidden title="Mentor theme playing">
+            <span class="music-note-icon">🎵</span>
+            <span class="eq-bars"><span class="bar-1"></span><span class="bar-2"></span><span class="bar-3"></span></span>
+          </span>
+        </div>
+        <div class="bubble-header-controls">
+          <button type="button" id="bubble-sound-toggle" class="bubble-sound-btn" title="Toggle Mentor Audio" aria-label="Toggle Sound">🔊</button>
+          <button type="button" id="bubble-close-btn" class="bubble-close" aria-label="Close speech bubble">×</button>
+        </div>
       </div>
       <p id="bubble-mentor-text" class="bubble-mentor-text">Your motivational dialogue appears here.</p>
       <div class="bubble-actions">
+        <button type="button" id="bubble-replay-btn" class="bubble-replay-btn" title="Replay Mentor Achievement Theme" hidden>🎵 Fanfare</button>
+        <button type="button" id="bubble-toggle-mode-btn" class="bubble-toggle-mode-btn" hidden>🏆 Achievement</button>
         <button type="button" id="bubble-next-btn" class="bubble-next-btn">Next Advice 💬</button>
       </div>
       <div class="speech-tail" aria-hidden="true"></div>
@@ -462,6 +540,76 @@
         <span id="mentor-fallback-name" class="mentor-fallback-name">Mentor</span>
       </div>
       <div id="mentor-figure-nametag" class="mentor-figure-nametag">Mentor</div>
+    </div>
+  </div>
+
+  <!-- ===================== PWA INSTALL POPUP ALERT NOTIFICATION ===================== -->
+  <div id="pwa-install-modal" class="pwa-install-modal-backdrop" hidden>
+    <div class="pwa-install-card" role="dialog" aria-modal="true" aria-labelledby="pwa-install-title">
+      <button type="button" id="pwa-install-close-x" class="pwa-modal-close" aria-label="Dismiss installation prompt">×</button>
+      
+      <div class="pwa-install-badge-row">
+        <span class="pwa-badge-pill">
+          <span class="pwa-badge-dot"></span>
+          Standalone Application
+        </span>
+      </div>
+
+      <div class="pwa-install-header">
+        <div class="pwa-icon-container">
+          <img src="/assets/icons/icon-192.png" alt="Daybook App Icon" class="pwa-app-icon-img" />
+        </div>
+        <div class="pwa-header-titles">
+          <h3 id="pwa-install-title">Install Daybook</h3>
+          <p class="pwa-header-tagline">DaybookX · Your daily activity companion</p>
+        </div>
+      </div>
+
+      <p class="pwa-install-desc">
+        Enjoy Daybook as an installed app on your desktop or mobile device. Launch instantly, log tasks offline, and receive mentor streak reminders directly!
+      </p>
+
+      <div class="pwa-perks-grid">
+        <div class="pwa-perk-item">
+          <span class="pwa-perk-icon">⚡</span>
+          <div>
+            <strong>Instant Access</strong>
+            <span>One-tap launch from dock or home screen</span>
+          </div>
+        </div>
+        <div class="pwa-perk-item">
+          <span class="pwa-perk-icon">📴</span>
+          <div>
+            <strong>Works Offline</strong>
+            <span>Log and track tasks with cache resilience</span>
+          </div>
+        </div>
+        <div class="pwa-perk-item">
+          <span class="pwa-perk-icon">🛡️</span>
+          <div>
+            <strong>Distraction-Free</strong>
+            <span>Zero browser tabs or URL bars</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- iOS Safari step-by-step guidance fallback -->
+      <div id="pwa-ios-instructions" class="pwa-ios-instructions" hidden>
+        <p class="ios-instruct-title">📱 Installing on iPhone or iPad:</p>
+        <ol class="ios-instruct-steps">
+          <li>Tap the <strong>Share</strong> button <span class="ios-icon-share">⎋</span> in your Safari toolbar.</li>
+          <li>Scroll down and tap <strong>Add to Home Screen</strong> <span class="ios-icon-add">⊕</span>.</li>
+        </ol>
+      </div>
+
+      <div class="pwa-install-actions">
+        <button type="button" id="pwa-install-confirm-btn" class="btn-primary pwa-btn-install">
+          <span>📲 Install App</span>
+        </button>
+        <button type="button" id="pwa-install-dismiss-btn" class="btn-secondary pwa-btn-dismiss">
+          Maybe Later
+        </button>
+      </div>
     </div>
   </div>
 

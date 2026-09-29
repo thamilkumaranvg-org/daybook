@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" width="1000" height="500">
+  <defs>
+    <linearGradient id="logoBlueGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1000" height="500" fill="#ffffff" />
+
+  <!-- Book Icon on Left -->
+  <g transform="translate(30, 40) scale(0.78)">
+    <!-- Radiating Energy Sparks above Book -->
+    <g fill="#2563eb">
+      <rect x="250" y="70" width="12" height="34" rx="6" />
+      <rect x="200" y="86" width="12" height="30" rx="6" transform="rotate(-30 206 101)" />
+      <rect x="300" y="86" width="12" height="30" rx="6" transform="rotate(30 306 101)" />
+    </g>
+
+    <!-- Book Backing Outline -->
+    <path d="M 40 40 
+             Q 150 10 255 70 
+             Q 360 10 470 40 
+             L 485 360 
+             Q 365 330 255 385 
+             Q 145 330 25 360 
+             Z" 
+          fill="#0f172a" />
+
+    <!-- Open Spine Valley Accent -->
+    <path d="M 255 70 L 255 385" stroke="#ffffff" stroke-width="14" stroke-linecap="round" />
+
+    <!-- Left Page Interior -->
+    <g fill="#ffffff">
+      <circle cx="95" cy="140" r="16" />
+      <rect x="130" y="128" width="85" height="24" rx="12" />
+      <circle cx="95" cy="205" r="16" />
+      <rect x="130" y="193" width="85" height="24" rx="12" />
+      <circle cx="95" cy="270" r="16" />
+      <rect x="130" y="258" width="85" height="24" rx="12" />
+    </g>
+
+    <!-- Right Page: Blue 'X' with Upward Arrow -->
+    <g>
+      <path d="M 300 120 L 420 305" stroke="url(#logoBlueGrad)" stroke-width="42" stroke-linecap="round" />
+      <path d="M 300 305 L 425 120" stroke="url(#logoBlueGrad)" stroke-width="42" stroke-linecap="round" />
+      <path d="M 380 102 L 450 102 L 450 172 Z" fill="url(#logoBlueGrad)" />
+    </g>
+  </g>
+
+  <!-- Typography: Daybook in Dark Navy, X in Vibrant Blue -->
+  <text x="450" y="295" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="142" font-weight="900" fill="#0f172a" letter-spacing="-2">Daybook<tspan fill="#2563eb">X</tspan></text>
+</svg>

@@ -14,8 +14,9 @@ import pg from "pg";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DATA_DIR = path.join(__dirname, "data");
+const DATA_DIR = process.env.DATA_DIR || (process.env.VERCEL ? path.join("/tmp", "daybook_data") : path.join(__dirname, "data"));
 const DB_FILE = path.join(DATA_DIR, "daybook_db.json");
+const BUNDLED_DB_FILE = path.join(__dirname, "data", "daybook_db.json");
 
 // Environment variables
 function sanitizeSupabaseUrl(url) {
@@ -96,8 +97,9 @@ function loadLocalDb() {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
-    if (fs.existsSync(DB_FILE)) {
-      const raw = fs.readFileSync(DB_FILE, "utf-8");
+    const targetToRead = fs.existsSync(DB_FILE) ? DB_FILE : (fs.existsSync(BUNDLED_DB_FILE) ? BUNDLED_DB_FILE : null);
+    if (targetToRead) {
+      const raw = fs.readFileSync(targetToRead, "utf-8");
       const parsed = JSON.parse(raw);
       if (parsed.users) localDb.users = parsed.users;
       if (Array.isArray(parsed.activities)) localDb.activities = parsed.activities;
@@ -658,7 +660,7 @@ export const db = {
     return activity;
   },
 
-  async updateActivity(id, userId, { title, notes, priority }) {
+  async updateActivity(id, userId, { title, notes, priority, date }) {
     const numId = Number(id);
     const numUserId = Number(userId);
 
@@ -669,6 +671,7 @@ export const db = {
         if (title !== undefined) updates.title = title.trim();
         if (notes !== undefined) updates.notes = (notes || "").trim();
         if (priority !== undefined) updates.priority = !!priority;
+        if (date !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(date)) updates.date = date;
 
         const { data, error } = await sb
           .from("activities")
@@ -698,11 +701,12 @@ export const db = {
     const pgClient = getPgPool();
     if (pgClient) {
       try {
+        const cleanDate = (date !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(date)) ? date : null;
         const res = await pgClient.query(
           `UPDATE public.activities 
-           SET title = COALESCE($1, title), notes = COALESCE($2, notes), priority = COALESCE($3, priority)
-           WHERE id = $4 AND user_id = $5 RETURNING *`,
-          [title?.trim(), notes?.trim(), priority !== undefined ? !!priority : null, numId, numUserId]
+           SET title = COALESCE($1, title), notes = COALESCE($2, notes), priority = COALESCE($3, priority), date = COALESCE($4, date)
+           WHERE id = $5 AND user_id = $6 RETURNING *`,
+          [title?.trim(), notes?.trim(), priority !== undefined ? !!priority : null, cleanDate, numId, numUserId]
         );
         if (res.rows[0]) {
           const row = res.rows[0];
@@ -729,6 +733,7 @@ export const db = {
       if (title !== undefined) act.title = title.trim();
       if (notes !== undefined) act.notes = (notes || "").trim();
       if (priority !== undefined) act.priority = !!priority;
+      if (date !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(date)) act.date = date;
       saveLocalDb();
       return act;
     }
